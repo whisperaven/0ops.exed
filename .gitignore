@@ -1,0 +1,11 @@
+# ---> compile and test
+exed/_celery/*
+exed/_ansible/*
+exed/_sources/*
+exed/_testing/*
+exed/_log/*
+exed/_exe/*
+*.pyc
+
+# ---> others
+*.swp
