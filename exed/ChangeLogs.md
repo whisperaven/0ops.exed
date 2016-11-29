@@ -9,3 +9,4 @@
 - Log optimize
 - Daemonization
 - Plugin loader
+- Partial deploy
