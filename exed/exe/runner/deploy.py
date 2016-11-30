@@ -14,7 +14,7 @@ class DeployRunner(Context):
     __RUNNER_NAME__ = "deploy"
     __RUNNER_MUTEX_REQUIRED__ = True
 
-    def handle(ctx, targets, role, extra_vars, async=True):
+    def handle(ctx, targets, role, extra_vars, partial=None, async=True):
 
         if not async:   # This should never happen
             raise JobNotSupportedError("deploy can not run under block mode")
@@ -23,11 +23,11 @@ class DeployRunner(Context):
         job.create(ctx.redis)
 
         return job.associate_task(
-            _async_deploy.delay(job.dict_ctx, targets, role, extra_vars), ctx.redis)
+            _async_deploy.delay(job.dict_ctx, targets, role, extra_vars, partial), ctx.redis)
 
 
 @AsyncRunner.task(bind=True, ignore_result=True, base=Context, serializer='json')
-def _async_deploy(ctx, job_ctx, targets, role, extra_vars):
+def _async_deploy(ctx, job_ctx, targets, role, extra_vars, partial):
     
     job = Job.load(job_ctx)
     job.bind_task(ctx.request.id)
@@ -36,7 +36,7 @@ def _async_deploy(ctx, job_ctx, targets, role, extra_vars):
     executor = _async_deploy.executor(targets)
 
     failure = []
-    for return_data in executor.deploy(role, extra_vars):
+    for return_data in executor.deploy(role, extra_vars, partial):
         
         target, retval = return_data.popitem()
         retval.pop(EXE_RETURN_ATTR)

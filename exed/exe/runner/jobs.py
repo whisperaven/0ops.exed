@@ -190,4 +190,6 @@ class Job(object):
 
             if source == cc:
                 break
+            source = source.split(':')[0]   ## remove the operate 
             yield {source: json.loads(value)}
+

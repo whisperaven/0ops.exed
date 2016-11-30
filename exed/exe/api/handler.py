@@ -39,6 +39,7 @@ class EndpointHandler(object):
         except JobNotSupportedError:
             raise cherrypy.HTTPError(status.INTERNAL_SERVER_ERROR, errno().message)
         except:
+            cherrypy.log("error response 500", traceback=True)
             raise cherrypy.HTTPError(status.INTERNAL_SERVER_ERROR)
 
 

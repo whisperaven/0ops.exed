@@ -33,5 +33,10 @@ class DeployHandler(EndpointHandler):
         if not isinstance(extra_vars, dict):
             raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_BAD_EXTRAVARS)
 
-        jid = self.handle(targets, role, extra_vars, async=True)
+        partial = cherrypy.request.json.pop('partial', None)
+        if partial != None:
+            if not isinstance(partial, six.text_type):
+                raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_BAD_PARTIAL)
+
+        jid = self.handle(targets, role, extra_vars, partial, async=True)
         return response(status.CREATED, dict(jid=jid))

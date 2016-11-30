@@ -28,6 +28,9 @@ class AnsibleOpts(object):
         for opt, val in kargs.items():
             setattr(self, opt, val)
 
+    def __setattr__(self, attr, val):
+        object.__setattr__(self, attr, val)
+
     def __getattr__(self, attr):
         return None
 
@@ -156,6 +159,7 @@ class AnsibleExecutor(ExecutorPrototype):
     INIT_PB = "_deploy.yml"
     ROLE_VAR = "_role"
     TARGET_VAR = "_targets"
+    DEFAULT_PARTIAL = "all"
 
     def __init__(self, hosts=[], timeout=0, concurrency=0, 
             workdir=os.getcwd(), inventory=None, playbooks=None, sshkey=None):
@@ -208,8 +212,6 @@ class AnsibleExecutor(ExecutorPrototype):
 
     def _run_tasks(self, play, reaper):
         """ Init TQM and run play. """
-        multiprocessing.current_process()._authkey = None
-        multiprocessing.current_process()._daemonic = None
         tqm = TaskQueueManager(inventory=self._inventory,
             variable_manager=self._varmanager, 
             loader=self._loader,
@@ -232,13 +234,17 @@ class AnsibleExecutor(ExecutorPrototype):
         pbex.run()
         reaper.done()
 
-    def _execute_playbooks(self, playbooks, extra_vars=None):
+    def _execute_playbooks(self, playbooks, extra_vars=None, partial=None):
         """ Execute ansible playbooks. """
+
+        if partial is None:
+            partial = self.DEFAULT_PARTIAL
 
         self._set_check_mode(False)
         if not isinstance(playbooks, (list, tuple)):
             playbooks = [playbooks]
 
+        self._opts.tags = partial
         self._varmanager.extra_vars = extra_vars
         collector = AnsibleReaper()
 
@@ -284,8 +290,7 @@ class AnsibleExecutor(ExecutorPrototype):
             host: dict(
                 status=result.get(EXE_STATUS_ATTR),
                 stdout=result.get(EXE_RETURN_ATTR).pop('stdout', ""),
-                stderr=result.get(EXE_RETURN_ATTR).pop('stderr', ""),
-                rtc=result.get(EXE_RETURN_ATTR).pop('rc', -1))})
+                stderr=result.get(EXE_RETURN_ATTR).pop('stderr', ""), rtc=result.get(EXE_RETURN_ATTR).pop('rc', -1))})
 
         for _out in self.execute(self.CMD_MODULE, **raw):
             yield _handler(*_out.popitem())
@@ -319,7 +324,7 @@ class AnsibleExecutor(ExecutorPrototype):
         for _out in self.execute(self.SERVICE_MODULE, name=name, state=state):
             yield _handler(*_out.popitem())
 
-    def deploy(self, roles, extra_vars=None):
+    def deploy(self, roles, extra_vars=None, partial=None):
         """ Deploy service/role/app on remote host(s). """
 
         if extra_vars:
@@ -332,4 +337,4 @@ class AnsibleExecutor(ExecutorPrototype):
         extra_vars[self.TARGET_VAR] = self._hosts
 
         playbook = os.path.join(self._playbooks_path, self.INIT_PB)
-        return self._execute_playbooks(playbook, extra_vars)
+        return self._execute_playbooks(playbook, extra_vars, partial)
