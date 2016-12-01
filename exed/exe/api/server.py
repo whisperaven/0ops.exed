@@ -25,6 +25,7 @@ LOG = logging.getLogger(__name__)
 DEFAULT_CONF = {
     'listen': "127.0.0.1",
     'listen_port': 16808,
+    'pid_file': "",
 }
 
 
@@ -35,7 +36,6 @@ class APIServer(object):
     API_CONF = {
         '/': {
             'request.dispatch': cherrypy.dispatch.MethodDispatcher(),
-            'request.show_mismatched_params': False,
         }
     }
 
@@ -68,10 +68,14 @@ class APIServer(object):
     def _update_config(self):
         _cp_config = {
             ## Server Opts ##
+            'log.screen': False,
+            'log.error_file': "",
+            'log.access_file': "",
             'server.socket_host': self._cfg.listen,
             'server.socket_port': self._cfg.listen_port,
-            'engine.autoreload.on': True,
-            'log.screen': False,
+            'engine.autoreload.on': False,
+            'request.show_tracebacks': False,
+            'request.show_mismatched_params': False,
             ## Custom Tools Opts ##
             'tools.delete_allow_header.on': True,
             'tools.fix_http_content_length.on': True,
@@ -85,7 +89,14 @@ class APIServer(object):
         cherrypy.log.access_log.addHandler(access_log_handler)
 
     def run(self, daemon=False):
+
+        if daemon:
+            daemon = cherrypy.process.plugins.Daemonizer(cherrypy.engine)
+            daemon.subscribe()
+        if self._cfg.pid_file:
+            pid = cherrypy.process.plugins.PIDFile(cherrypy.engine, self._cfg.pid_file)
+            pid.subscribe()
+
         cherrypy.engine.unsubscribe('graceful', cherrypy.log.reopen_files)
         cherrypy.engine.start()
         cherrypy.engine.block()
-

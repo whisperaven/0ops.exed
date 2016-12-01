@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import multiprocessing
+
 import redis
 import celery
 
@@ -10,11 +12,12 @@ from exe.executor import AnsibleExecutor as Executor
 
 
 ## Consts ##
+DEFAULT_CONCURRENCY = multiprocessing.cpu_count()
 DEFAULT_CONF = {
     'redis_url'     : "redis://localhost",
     'broker_url'    : "'amqp://guest:guest@localhost:5672//",
     'executor'      : "ansible",
-    'concurrency'   : 0
+    'concurrency'   : DEFAULT_CONCURRENCY,
 }
 
 
@@ -27,6 +30,7 @@ class Context(celery.Task):
 
         try:
             self._cfg = CONF.runner
+            self._log_cfg = CONF.log
         except ConfigError:
             self._cfg = ModuleOpts("", DEFAULT_CONF)
         self._cfg.merge(DEFAULT_CONF)

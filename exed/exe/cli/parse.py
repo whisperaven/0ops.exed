@@ -22,6 +22,7 @@ DEFAULT_CONF = {
     'log_level': "INFO",
     'error_log': "",
     'access_log': "",
+    'worker_log': "",
 }
 
 
@@ -64,7 +65,17 @@ def exe_logprepare():
         _cfg = CONF.log
     except ConfigError:
         _cfg = ModuleOpts("", DEFAULT_CONF)
+    _cfg.merge(DEFAULT_CONF)
 
     logger_init(_cfg.error_log, _cfg.log_level)
-    return open_logfile(_cfg.access_log)
 
+
+def exe_accesslog():
+
+    try:
+        _cfg = CONF.log
+    except ConfigError:
+        _cfg = ModuleOpts("", DEFAULT_CONF)
+    _cfg.merge(DEFAULT_CONF)
+
+    return open_logfile(_cfg.access_log)

@@ -51,6 +51,9 @@ def logger_init(log_path="", log_level=LOG_LEVEL_DEFAULT, log_format=None):
     else:
         handler = open_logfile(log_path)
 
+    for _handler in logger.handlers:
+        logger.removeHandler(_handler)
+
     logger.addHandler(handler)
     logger.setLevel(LOG_LEVEL_DEFAULT)
     handler.setFormatter(formatter)
