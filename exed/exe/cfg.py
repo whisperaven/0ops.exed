@@ -1,11 +1,17 @@
 # -*- coding: utf-8 -*-
 
+try:
+    from ConfigParser import ConfigParser
+except ImportError:
+    from configparser import ConfigParser
 from copy import deepcopy
 
+
 from exe.exc import ConfigError
+from exe.utils.err import errno
 
 
-__all__ = ['CONF', 'ModuleOpts']
+__all__ = ['CONF', 'ModuleOpts', 'cfgread']
 
 
 class _ConfigOpts(object):
@@ -33,6 +39,9 @@ class _ConfigOpts(object):
         if self.ctx.has_key(cfg_name):
             raise ConfigError("duplicated config section \"{0}\".".format(cfg_name))
         self.ctx[cfg_name] = cfg_dict
+
+
+CONF = _ConfigOpts()
 
 
 class ModuleOpts(object):
@@ -67,4 +76,23 @@ class ModuleOpts(object):
         except KeyError:
             raise ConfigError("\"{0}\" no such config option.".format(attr))
 
-CONF = _ConfigOpts()
+
+def cfgread(config_file):
+
+    cfg = ConfigParser()
+    if not hasattr(cfg, 'read_file'):
+        cfg.read_file = cfg.readfp
+
+    try:
+        cfp = open(config_file)
+        cfg.read_file(cfp)
+        cfp.close()
+    except:
+        raise ConfigError("cannot open/read configfile, {0}".format(errno()))
+
+    for _cs in cfg.sections():
+        CONF.regisiter_opts(_cs, dict(zip(
+            [ c[0] for c in cfg.items(_cs) ],
+            [ c[1].strip('\'').strip('"') for c in cfg.items(_cs) ])))
+
+    return CONF

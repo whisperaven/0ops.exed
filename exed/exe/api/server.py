@@ -8,6 +8,7 @@ import cherrypy
 from exe.cfg import CONF, ModuleOpts
 from exe.exc import ConfigError
 from exe.utils.err import errno
+from exe.utils.log import open_logfile
 
 from .job import JobQueryHandler
 from .target import TargetHandler
@@ -83,20 +84,17 @@ class APIServer(object):
             'error_page.default': error_response,
         }
         cherrypy.config.update(_cp_config)
-
-    def logger_init(self, access_log_handler):
         cherrypy.log.error_log = LOG
-        cherrypy.log.access_log.addHandler(access_log_handler)
+
+    def set_access_log(self, handler):
+        cherrypy.log.access_log.addHandler(handler)
 
     def run(self, daemon=False):
-
         if daemon:
             daemon = cherrypy.process.plugins.Daemonizer(cherrypy.engine)
             daemon.subscribe()
         if self._cfg.pid_file:
             pid = cherrypy.process.plugins.PIDFile(cherrypy.engine, self._cfg.pid_file)
             pid.subscribe()
-
-        cherrypy.engine.unsubscribe('graceful', cherrypy.log.reopen_files)
         cherrypy.engine.start()
         cherrypy.engine.block()

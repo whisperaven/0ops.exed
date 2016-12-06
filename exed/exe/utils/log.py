@@ -2,7 +2,6 @@
 
 import sys
 import logging
-import logging.handlers
 
 from exe.exc import ConfigError
 from exe.utils.err import errno
@@ -30,20 +29,19 @@ def logger_bootstrap():
     logger.setLevel(LOG_LEVEL_DEFAULT)
 
 
-def logger_init(log_path="", log_level=LOG_LEVEL_DEFAULT, log_format=None):
+def logger_init(log_path="", log_level="", log_format=None):
     """ Open and config the root logger. """
+
+    if not log_level:
+        log_level = LOG_LEVEL_DEFAULT
+    else:
+        for name, level in LOG_LEVEL_MAPPER.iteritems():
+            if name == log_level.upper():
+                log_level = level
+                break
 
     if log_format == None:
         log_format = LOG_FORMAT_DEFAULT
-
-    level = None
-    for name, _level in LOG_LEVEL_MAPPER.iteritems():
-        if name == log_level.upper():
-            level = _level
-    if level == None:
-        raise ConfigError("bad log level {0}".format(log_level))
-
-    logger = logging.getLogger()
     formatter = logging.Formatter(log_format)
 
     if not log_path:
@@ -51,24 +49,22 @@ def logger_init(log_path="", log_level=LOG_LEVEL_DEFAULT, log_format=None):
     else:
         handler = open_logfile(log_path)
 
+    logger = logging.getLogger()
     for _handler in logger.handlers:
         logger.removeHandler(_handler)
 
     logger.addHandler(handler)
-    logger.setLevel(LOG_LEVEL_DEFAULT)
+    logger.setLevel(log_level)
     handler.setFormatter(formatter)
 
 
-def open_logfile(log_path):
+def open_logfile(log_path=""):
     """ Return log handler by open log file. """
 
-    try:
-        if not log_path:
-            handler = logging.StreamHandler(sys.stdout) 
-        else:
-            handler = logging.handlers.WatchedFileHandler(log_path, 'a', 'utf-8')
-    except IOError:
-        raise ConfigError("cannot open log file, {0}".format(errno()))
+    if not log_path:
+        handler = logging.StreamHandler(sys.stdout) 
+    else:
+        handler = logging.FileHandler(log_path, 'a', 'utf-8')
     handler.setLevel(logging.DEBUG)
 
     return handler

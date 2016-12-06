@@ -8,10 +8,14 @@
 ## Version - 0.0.3 (Commit @ - 2016/Dec/01)
 - Daemonization
 
-# TODOs
-- Notify callback
-- Log optimize
+## Version - 0.0.4 (Commit @ - 2016/Dec/06)
+- Celery worker standing along
 - Daemonization optimize
+- Document
+
+# TODOs
+- Release handler
 - Plugin loader
 - Celery error handling
-- Celery worker standing along
+- Notify callback
+- Log optimize
