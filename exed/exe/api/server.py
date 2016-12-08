@@ -17,6 +17,7 @@ from .facter import FacterHandler
 from .deploy import DeployHandler
 from .service import ServiceHandler
 from .execute import ExecuteHandler
+from .release import ReleaseHandler
 from .utils import error_response
 
 LOG = logging.getLogger(__name__)
@@ -49,6 +50,7 @@ class APIServer(object):
         '/deploy': DeployHandler,
         '/service': ServiceHandler,
         '/execute': ExecuteHandler,
+        '/release': ReleaseHandler,
     }
 
     def __init__(self):

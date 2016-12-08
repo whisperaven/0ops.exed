@@ -7,8 +7,9 @@ import celery
 
 from exe.cfg import CONF
 from exe.cfg import ModuleOpts
-from exe.exc import ConfigError
+from exe.exc import ConfigError, ReleaseNotSupportedError
 from exe.executor import AnsibleExecutor as Executor
+from exe.release import HANDLERS
 
 
 ## Consts ##
@@ -27,12 +28,15 @@ class Context(celery.Task):
     __RUNNER_MUTEX_REQUIRED__ = False
 
     def __init__(self):
-        """ Init Context for each Runner, which provide some config infomations.
+        """ 
+        Init Context for each Runner, which provide some context data
+                like config infomations.
         
-            At celery worker point of view,
-                The `Context` will be created by celery worker before
-                execute `CeleryWorkerInit`, which means the `cfgread` has not
-                run, so that `CONF` struct will be empty here. """
+        At celery worker point of view,
+            The `Context` will be created by celery worker before
+            execute `CeleryWorkerInit`, which means the `cfgread` has not
+            run, so that `CONF` struct will be empty here. 
+        """
         self._cfg = None
         self._rpool = None
         self._concurrency = None
@@ -75,3 +79,19 @@ class Context(celery.Task):
         if not self._executor_opts:
             self._executor_opts = CONF.module(self.cfg.executor)
         return Executor(targets, **self._executor_opts.dict_opts)
+
+    def release_support(self, apptype):
+        for RH in HANDLERS:
+            if RH.support(apptype):
+                return True
+        return False
+
+    def release_handler(self, apptype):
+        for RH in HANDLERS:
+            if RH.support(apptype):
+                return RH
+        raise ReleaseNotSupportedError("non supported release app {0}".format(apptype))
+
+    @property
+    def release_handlers(self):
+        return HANDLERS

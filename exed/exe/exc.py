@@ -33,6 +33,11 @@ class JobConflictError(ExeError):
     pass
 
 
+## ReleaseHandler Errors ##
+class ReleaseNotSupportedError(ExeError):
+    pass
+
+
 ## Executor Errors ##
 class ExecutorPrepareError(ExeError):
     pass
@@ -40,4 +45,3 @@ class ExecutorPrepareError(ExeError):
 
 class ExecutorNoMatchError(ExeError):
     pass
-

@@ -17,7 +17,7 @@ class DeployRunner(Context):
     def handle(ctx, targets, role, extra_vars, partial=None, async=True):
 
         if not async:   # This should never happen
-            raise JobNotSupportedError("deploy can not run under block mode")
+            raise JobNotSupportedError("deploy can not run under block mode (you may hit a bug)")
 
         job = Job(targets, ctx.runner_name, ctx.runner_mutex)
         job.create(ctx.redis)

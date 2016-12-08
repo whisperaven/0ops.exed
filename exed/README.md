@@ -201,6 +201,7 @@ HTTP/1.1 204 No Content
 ##### Status codes:
 - **204** - no error
 - **400** - bad request/parameter
+- **404** - no such jobs
 - **500** - server error
 
 ## Operate Endpoints (Block/Sync Modes)

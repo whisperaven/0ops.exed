@@ -26,16 +26,16 @@ class PingRunner(Context):
 @AsyncRunner.task(bind=True, ignore_result=True, base=Context, serializer='json')
 def _async_ping(ctx, job_ctx, targets):
 
-        job = Job.load(job_ctx)
-        job.bind_task(ctx.request.id)
+    job = Job.load(job_ctx)
+    job.bind_task(ctx.request.id)
 
-        redis = _async_ping.redis
-        executor = _async_ping.executor(targets)
+    redis = _async_ping.redis
+    executor = _async_ping.executor(targets)
 
-        for return_data in executor.ping():
-            target, retval = return_data.popitem()
+    for return_data in executor.ping():
+        target, retval = return_data.popitem()
 
-            job.task_update(target, retval, redis)
-            job.task_done(target, redis)
+        job.task_update(target, retval, redis)
+        job.task_done(target, redis)
 
-        job.done(redis)
+    job.done(redis)

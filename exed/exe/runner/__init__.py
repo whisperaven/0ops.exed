@@ -11,8 +11,9 @@ from .facter import FacterRunner
 from .service import ServiceRunner
 from .execute import ExecuteRunner
 from .deploy import DeployRunner
+from .release import ReleaseRunner
 
 
-__all__ = ['AsyncRunner', 'Context', 'Job', 'JobQuerier', 'TargetRunner', 
+__all__ = ['AsyncRunner', 'Context', 'Job', 'JobQuerier', 'TargetRunner', 'ReleaseRunner', 
     'PingRunner', 'FacterRunner', 'ServiceRunner', 'ExecuteRunner', 'DeployRunner',
     'celery_init']

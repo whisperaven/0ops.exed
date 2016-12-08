@@ -26,23 +26,23 @@ class ExecuteRunner(Context):
 @AsyncRunner.task(bind=True, ignore_result=True, base=Context, serializer='json')
 def _async_execute(ctx, job_ctx, targets, command):
 
-        job = Job.load(job_ctx)
-        job.bind_task(ctx.request.id)
+    job = Job.load(job_ctx)
+    job.bind_task(ctx.request.id)
 
-        redis = _async_execute.redis
-        executor = _async_execute.executor(targets)
+    redis = _async_execute.redis
+    executor = _async_execute.executor(targets)
 
-        failed = False
-        for return_data in executor.raw_execute(command):
+    failed = False
+    for return_data in executor.raw_execute(command):
 
-            target, retval = return_data.popitem()
-            job.task_update(target, retval, redis)
+        target, retval = return_data.popitem()
+        job.task_update(target, retval, redis)
 
-            if int(retval.get(EXE_STATUS_ATTR)) in (EXE_FAILED, EXE_UNREACHABLE):
-                job.task_failure(target, redis)
-                failed = True
+        if int(retval.get(EXE_STATUS_ATTR)) in (EXE_FAILED, EXE_UNREACHABLE):
+            job.task_failure(target, redis)
+            failed = True
 
-        if not failed:
-            job.done(redis)
-        else:
-            job.failure(redis)
+    if not failed:
+        job.done(redis)
+    else:
+        job.failure(redis)

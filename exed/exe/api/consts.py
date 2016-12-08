@@ -13,7 +13,10 @@ ERR_NO_JID = "no jid given"
 ERR_BAD_ROLE = "role should be string types"
 ERR_BAD_PARTIAL = "partial should be string types"
 ERR_BAD_EXTRAVARS = "extra vars should be an json object"
+ERR_BAD_EXTRAOPTS = "extra opts for release handler should be an json object"
 ERR_BAD_SERVPARAMS = "bad service name or state"
+ERR_BAD_APPPARAMS = "bad app info params"
+ERR_BAD_RELPARAMS = "bad release params"
 ERR_JOB_NOT_EXISTS = "job not exists"
 
 ## Service State Emum ##

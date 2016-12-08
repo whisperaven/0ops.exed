@@ -19,3 +19,5 @@
 - Celery error handling
 - Notify callback
 - Log optimize
+- Job which not finished should not be deleted
+- Server Token
