@@ -101,12 +101,13 @@ class Context(celery.Task):
             for EXECUTOR in _executors:
                 if EXECUTOR.name() == self.cfg.executor:
                     self._executor = EXECUTOR
+                    LOG.info("using executor: <{0}>".format(EXECUTOR.name()))
                     break
             if self._executor == None:
                 raise ConfigError("executor <{0}> could not be loaded".format(self.cfg.executor))
         if not self._executor_opts:
             self._executor_opts = CONF.module(self.cfg.executor)
-        return Executor(targets, **self._executor_opts.dict_opts)
+        return self._executor(targets, **self._executor_opts.dict_opts)
 
     def release_handler(self, apptype):
         for RH in HANDLERS:

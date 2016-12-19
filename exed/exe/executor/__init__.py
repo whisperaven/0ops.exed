@@ -4,9 +4,7 @@ from .prototype import ExecutorPrototype
 from ._ansible import AnsibleExecutor
 
 
-EXECUTORS = []
-CORE_EXECUTORS = [AnsibleExecutor]
+EXECUTORS = [AnsibleExecutor]
 
 
-__all__ = ['ExecutorPrototype', 'AnsibleExecutor', 
-        'CORE_EXECUTORS', 'EXECUTORS']
+__all__ = ['ExecutorPrototype', 'AnsibleExecutor', 'EXECUTORS']

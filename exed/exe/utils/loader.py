@@ -45,6 +45,7 @@ class PluginLoader(object):
                             LOG.info("module {0} loaded".format(obj))
                 except TypeError:   # issubclass() arg 1 must be a class
                     pass
+        sys.path = _path
 
         return _modules
 

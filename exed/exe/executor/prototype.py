@@ -19,7 +19,7 @@ class ExecutorPrototype(object):
 
     @classmethod
     def name(cls):
-        return __EXECUTOR_NAME__
+        return cls.__EXECUTOR_NAME__
 
     @abc.abstractmethod
     def target(self, pattern):
