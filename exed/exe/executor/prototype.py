@@ -17,6 +17,10 @@ class ExecutorPrototype(object):
         self._hosts = hosts
         self._timeout = timeout
 
+    @classmethod
+    def name(cls):
+        return __EXECUTOR_NAME__
+
     @abc.abstractmethod
     def target(self, pattern):
         """ Match target by given pattern. """

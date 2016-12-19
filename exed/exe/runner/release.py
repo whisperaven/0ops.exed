@@ -19,8 +19,8 @@ class ReleaseRunner(Context):
         query_result = []
         for RH in ctx.release_handlers:
             rh_info = dict()
-            rh_info['name'] = RH.name()
-            rh_info['support'] = list(RH.supported_apps())
+            rh_info['name'] = RH.hname()
+            rh_info['type'] = RH.htype()
             query_result.append(rh_info)
         return query_result
 
@@ -28,7 +28,7 @@ class ReleaseRunner(Context):
 
         if not async:   # This should never happen
             raise JobNotSupportedError("release can not run under block mode (you may hit a bug)")
-        if not ctx.release_support(apptype):
+        if not ctx.release_handler(apptype):
             raise ReleaseNotSupportedError("non supported release app {0}".format(apptype))
 
         job = Job(targets, ctx.runner_name, ctx.runner_mutex)
@@ -67,3 +67,4 @@ def _async_release(ctx, job_ctx, targets, appname, apptype, revision, nobackup, 
             job.task_update(target, retval, redis)
             if int(retval.get(REL_STATUS_ATTR)) == REL_FAILED:
                 job.task_failure(target, redis)
+        job.done(redis)

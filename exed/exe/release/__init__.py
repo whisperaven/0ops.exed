@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from .prototype import ReleaseHandlerPrototype
-from .common import CommonReleaseHandler
 
 
-HANDLERS = [CommonReleaseHandler]
+HANDLERS = []
 
 
-__all__ = ['ReleaseHandlerPrototype', 'HANDLERS', 'CommonReleaseHandler']
+__all__ = ['ReleaseHandlerPrototype', 'HANDLERS']

@@ -7,7 +7,6 @@ class ReleaseHandlerPrototype(object):
 
     __RHANDLER_NAME__ = RELEASE_HANDLER_UNSET
     __RHANDLER_TYPE__ = RELEASE_HANDLER_UNSET
-    __SUPPORTED_APP__ = ()
 
     def __init__(self, hosts, appname, executor):
         self._hosts = hosts
@@ -15,21 +14,24 @@ class ReleaseHandlerPrototype(object):
         self._executor = executor
 
     @classmethod
-    def name(cls):
+    def hname(cls):
         return cls.__RHANDLER_NAME__
 
     @classmethod
-    def handler_type(cls):
+    def htype(cls):
         return cls.__RHANDLER_TYPE__
 
-    @classmethod
-    def supported_apps(cls):
-        return cls.__SUPPORTED_APP__
+    @property
+    def appname(self):
+        return self._appname
 
-    @classmethod
-    def support(cls, apptype):
-        """ Return true if handler support the apptype. """
-        return apptype in cls.__SUPPORTED_APP__
+    @property
+    def targets(self):
+        return self._hosts
+
+    @property
+    def executor(self):
+        return self._executor
 
     def release(self, revision, **extra_opts):
         """ Release revision on remote host(s). """
