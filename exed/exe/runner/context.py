@@ -35,7 +35,7 @@ class Context(celery.Task):
     def __init__(self):
         """ 
         Init Context for each Runner, which provide some context data
-                like config infomations or plugins.
+            like config infomations or plugins.
         
         When celery worker starts,
             The `Context` will be created by celery worker initialize the
@@ -44,12 +44,12 @@ class Context(celery.Task):
 
         So that, everything here is Lazy evaluation.
         """
-        self._cfg = None
-        self._rpool = None
-        self._concurrency = None
-        self._executor = None
-        self._executor_opts = None
-        self._release_handlers = None
+        self._cfg = None            # runner config
+        self._rpool = None          # redis connection pool
+        self._concurrency = None    # concurrency opts
+        self._release_plugins = None
+        self._executor_plugin = None
+        self._executor_plugin_opts = None
 
     @property
     def cfg(self):
@@ -85,32 +85,33 @@ class Context(celery.Task):
         return redis.Redis(connection_pool=self._rpool)
 
     @property
-    def release_handlers(self):
-        if self._release_handlers == None:
-            self._release_handlers = []
-            for RH in PluginLoader(ReleaseHandlerPrototype, self.cfg.modules).modules:
-                self._release_handlers.append(RH)
-            for RH in HANDLERS:
-                self._release_handlers.append(RH)
-        return self._release_handlers
+    def release_plugins(self):
+        if self._release_plugins == None:
+            self._release_plugins = []
+            for RH in PluginLoader(ReleaseHandlerPrototype, self.cfg.modules).modules + HANDLERS:
+                self._release_plugins.append(RH)
+        return self._release_plugins
 
     def executor(self, targets=[]):
-        if self._executor == None:
-            _executors = PluginLoader(ExecutorPrototype, self.cfg.modules).modules
-            _executors += EXECUTORS
-            for EXECUTOR in _executors:
+        if self._executor_plugin == None:
+            _executor_plugins = PluginLoader(ExecutorPrototype, self.cfg.modules).modules + EXECUTORS
+            for EXECUTOR in _executor_plugins:
                 if EXECUTOR.name() == self.cfg.executor:
-                    self._executor = EXECUTOR
+                    self._executor_plugin = EXECUTOR
                     LOG.info("using executor: <{0}>".format(EXECUTOR.name()))
                     break
-            if self._executor == None:
-                raise ConfigError("executor <{0}> could not be loaded".format(self.cfg.executor))
-        if not self._executor_opts:
-            self._executor_opts = CONF.module(self.cfg.executor)
-        return self._executor(targets, **self._executor_opts.dict_opts)
+            if self._executor_plugin == None:
+                raise ConfigError("executor plugin <{0}> could not be loaded".format(self.cfg.executor))
+        if self._executor_plugin_opts == None:
+            try:
+                self._executor_plugin_opts = CONF.module(self.cfg.executor)
+            except ConfigError:
+                self._executor_plugin_opts = {}
+                LOG.warning("no executor opts config found, {0}".format(errno()))
+        return self._executor_plugin(targets, **self._executor_plugin_opts.dict_opts)
 
-    def release_handler(self, apptype):
-        for RH in HANDLERS:
+    def release_plugin(self, apptype):
+        for RH in self.release_plugins:
             if RH.htype() == apptype:
                 return RH
         return None

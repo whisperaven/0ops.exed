@@ -20,5 +20,3 @@ class CommonReleaseHandler(ReleaseHandlerPrototype):
     def revision(self, **extra_opts):
         pass
 
-    def rbackup(self, **extra_opts):
-        pass

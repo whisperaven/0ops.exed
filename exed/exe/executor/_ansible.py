@@ -172,7 +172,7 @@ class AnsibleExecutor(ExecutorPrototype):
 
         # check inventory dir or file exists
         inventory = make_abs_path(inventory, self._workdir)
-        if not os.path.isfile(inventory) and not os.path.isdir(inventory):
+        if not os.path.exists(inventory):
             raise ExecutorPrepareError("{0}, bad inventory given".format(inventory))
         self._inventory_path = inventory
 
@@ -191,16 +191,22 @@ class AnsibleExecutor(ExecutorPrototype):
                 raise ExecutorPrepareError("{0}, bad sshkey file".format(sshkey))
         self._sshkey = sshkey
 
-        # ansible internal data structs
+        self._concurrency = concurrency if concurrency else self.FORK
+        self._prepare()
+
+        super(AnsibleExecutor, self).__init__(hosts, timeout)
+
+    def _prepare(self):
+        """ Prepare ansible internal data struts. """
         self._loader = DataLoader()
         self._varmanager = VariableManager()
         self._inventory = Inventory(loader=self._loader, variable_manager=self._varmanager, host_list=self._inventory_path)
         self._varmanager.set_inventory(self._inventory)  
-
-        self._concurrency = concurrency if concurrency else self.FORK
         self._opts = AnsibleOpts(forks=self._concurrency, private_key_file=self._sshkey)
 
-        super(AnsibleExecutor, self).__init__(hosts, timeout)
+    def _reset_internal(self):
+        """ Reset ansible internal data struts by invoke `_prepare` again. """
+        self._prepare()
 
     def _is_raw(self, module):
         """ Ansible RAW module, see `_play_ds()` in `cli/adhoc.py` """
@@ -239,10 +245,11 @@ class AnsibleExecutor(ExecutorPrototype):
 
         if partial is None:
             partial = self.DEFAULT_PARTIAL
-
-        self._set_check_mode(False)
         if not isinstance(playbooks, (list, tuple)):
             playbooks = [playbooks]
+
+        self._reset_internal()
+        self._set_check_mode(False)
 
         self._opts.tags = partial
         self._varmanager.extra_vars = extra_vars
@@ -267,6 +274,8 @@ class AnsibleExecutor(ExecutorPrototype):
         # Handle module args
         for opt, val in module_args.items():
             args = "{0}={1} {2}".format(opt, val, args)
+
+        self._reset_internal()
         self._set_check_mode(check_mode)
 
         args = parse_kv(args.strip(), self._is_raw(module))

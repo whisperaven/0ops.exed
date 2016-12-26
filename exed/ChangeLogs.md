@@ -13,11 +13,14 @@
 - Daemonization optimize
 - Document
 
-# TODOs
-- Release handler
+## Version - 0.0.5 (Commit @ - 2016/Dec/26)
 - Plugin loader
+- Release handler
+
+# TODOs
 - Celery error handling
 - Notify callback
 - Log optimize
+- Job optimize
 - Job which not finished should not be deleted
 - Server Token

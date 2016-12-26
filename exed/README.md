@@ -421,4 +421,4 @@ Content-Type: application/json
 ```
 
 - Those api have same parameters of their corresponding method in **block/sync mode**.
-- The different here is async mode using post with json data instead of get with query string.
+- The different here is async mode using **POST** with json data instead of **GET** with query string.

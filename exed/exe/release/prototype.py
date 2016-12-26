@@ -26,7 +26,7 @@ class ReleaseHandlerPrototype(object):
         return self._appname
 
     @property
-    def targets(self):
+    def hosts(self):
         return self._hosts
 
     @property
@@ -43,8 +43,4 @@ class ReleaseHandlerPrototype(object):
 
     def revision(self, **extra_opts):
         """ Gather content of revision records. """
-        raise NotImplementedError
-
-    def rbackup(self, extra_opts):
-        """ Make backup on remote host(s). """
         raise NotImplementedError

@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
 
+import logging
+
 from .jobs import Job
 from .async import AsyncRunner
 from .context import Context
 
 from exe.executor.consts import *
+
+LOG = logging.getLogger(__name__)
+
 
 class ExecuteRunner(Context):
     """ Execute command on remote host(s). """

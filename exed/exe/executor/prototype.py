@@ -14,12 +14,27 @@ class ExecutorPrototype(object):
     __EXECUTOR_NAME__ = EXECUTOR_UNSET
 
     def __init__(self, hosts, timeout):
+        self._slot = None
         self._hosts = hosts
         self._timeout = timeout
 
     @classmethod
     def name(cls):
         return cls.__EXECUTOR_NAME__
+
+    @property
+    def hosts(self):
+        return self._hosts
+
+    def set_hosts(self, hosts):
+        if self._slot == None:
+            self._slot = self._hosts
+        self._hosts = hosts if isinstance(hosts, list) else [hosts]
+
+    def reset_hosts(self):
+        if self._slot != None:
+            self._hosts = self._slot
+            self._slot = None
 
     @abc.abstractmethod
     def target(self, pattern):

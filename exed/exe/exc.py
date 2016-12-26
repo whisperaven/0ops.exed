@@ -45,3 +45,12 @@ class ExecutorPrepareError(ExeError):
 
 class ExecutorNoMatchError(ExeError):
     pass
+
+
+## Release Errors ##
+class ReleaseError(ExeError):
+    pass
+
+
+class ReleaseAbort(ExeError):
+    pass

@@ -35,14 +35,13 @@ class ReleaseHandler(EndpointHandler):
         if not appname or not apptype or not revision:
             raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_BAD_APPPARAMS)
 
-        nobackup = cherrypy.request.json.pop('nobackup', False)
         rollback = cherrypy.request.json.pop('rollback', False)
-        if not isinstance(nobackup, bool) or not isinstance(rollback, bool):
+        if not isinstance(rollback, bool):
             raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_BAD_RELPARAMS)
 
         extra_opts = cherrypy.request.json.pop('extra_opts', dict())
         if not isinstance(extra_opts, dict):
             raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_BAD_EXTRAOPTS)
 
-        jid = self.handle(targets, appname, apptype, revision, nobackup, rollback, extra_opts, async=True)
+        jid = self.handle(targets, appname, apptype, revision, rollback, extra_opts, async=True)
         return response(status.CREATED, dict(jid=jid))

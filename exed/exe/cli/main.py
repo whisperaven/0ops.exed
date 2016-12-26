@@ -24,12 +24,10 @@ def exe_main():
 
         args = exe_argparse()
         cf = exe_cfgparse(args.conf)
-
         logcf = exe_logger_cfgparse()
         access_log = exe_logger_init(logcf)
 
         celery_init(AsyncRunner)
-
         api = APIServer()
         api.set_access_log(access_log)
 

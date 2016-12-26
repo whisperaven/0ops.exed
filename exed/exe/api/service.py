@@ -17,6 +17,7 @@ def _state_parse(state):
     elif state == STATE_STOPED:
         start = False
     elif state == STATE_RESTARTED:
+        start = True
         restart = True
     else:
         raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_BAD_SERVPARAMS)
