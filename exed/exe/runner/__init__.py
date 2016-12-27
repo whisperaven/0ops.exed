@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from .context import Context
-from .async import AsyncRunner
+from ._async import AsyncRunner
 from .jobs import Job, JobQuerier
 from .target import TargetRunner
 from .utils import celery_init

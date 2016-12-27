@@ -2,11 +2,11 @@
 
 import cherrypy
 
-from exe.runner import ReleaseRunner
-
 from .utils import *
 from .consts import *
 from .handler import EndpointHandler
+
+from exe.runner import ReleaseRunner
 
 
 @cherrypy.expose

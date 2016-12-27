@@ -28,6 +28,14 @@ DEFAULT_CONF = {
 
 
 class Context(celery.Task):
+    """ 
+    Context Object which provide some runtime context for each runner, including
+        ConfigurationContext, RedisAccess, CeleryAsyncContext, RunnerAccess for 
+        both runner object and endpoint handler object.
+
+    All Runner should be subclass of this class with thier own `__RUNNER_NAME__`
+        and `__RUNNER_MUTEX_REQUIRED__` attribute.
+    """
 
     __RUNNER_NAME__ = None
     __RUNNER_MUTEX_REQUIRED__ = False
@@ -53,48 +61,69 @@ class Context(celery.Task):
 
     @property
     def cfg(self):
+        """ Configuration context access for runner and celery. """
         if self._cfg == None:
             try:
                 self._cfg = CONF.runner
+                LOG.debug("configuration of <runner> loaded")
             except ConfigError:
                 self._cfg = ModuleOpts("", DEFAULT_CONF)
+                LOG.debug("no configuration found for <runner>, load default options")
             self._cfg.merge(DEFAULT_CONF)
+            LOG.debug("configuration of <runner> mearged")
         return self._cfg
 
     @property
     def concurrency(self):
+        """ Concurrency setting for runner and celery. """
         if self._concurrency == None:
             _concurrency = self._cfg.concurrency
             if not _concurrency:
                 _concurrency = DEFAULT_CONCURRENCY
             self._concurrency = _concurrency
+            LOG.debug("concurrency setting of <runner> loaded, value is {0}".format(_concurrency))
         return self._concurrency
 
     @property
     def runner_name(self):
+        """ For runner subclass get their own name. """
         return self.__RUNNER_NAME__
 
     @property
     def runner_mutex(self):
+        """ For runner subclass get their own mutex attr. """
         return self.__RUNNER_MUTEX_REQUIRED__
 
     @property
     def redis(self):
+        """ For runner subclass redis access. """
         if not self._rpool:
             self._rpool = redis.ConnectionPool.from_url(url=self.cfg.redis_url)
+            LOG.debug("redis connection pool <{0}> created".format(self._rpool))
         return redis.Redis(connection_pool=self._rpool)
 
     @property
     def release_plugins(self):
+        """ For runner subclass access release handler plugins. """
         if self._release_plugins == None:
             self._release_plugins = []
             for RH in PluginLoader(ReleaseHandlerPrototype, self.cfg.modules).modules + HANDLERS:
                 self._release_plugins.append(RH)
+            LOG.debug("release handler plugin loaded via PluginLoader")
         return self._release_plugins
 
+    def release_plugin(self, apptype):
+        """ For runner subclass access release handler plugin. """
+        for RH in self.release_plugins:
+            if RH.htype() == apptype:
+                return RH
+        return None
+
     def executor(self, targets=[]):
+        """ For runner subclass access executor plugin. """
         if self._executor_plugin == None:
-            _executor_plugins = PluginLoader(ExecutorPrototype, self.cfg.modules).modules + EXECUTORS
+            _executor_plugins = PluginLoader(ExecutorPrototype, self.cfg.modules).modules
+            _executor_plugins += EXECUTORS
             for EXECUTOR in _executor_plugins:
                 if EXECUTOR.name() == self.cfg.executor:
                     self._executor_plugin = EXECUTOR
@@ -105,13 +134,8 @@ class Context(celery.Task):
         if self._executor_plugin_opts == None:
             try:
                 self._executor_plugin_opts = CONF.module(self.cfg.executor)
+                LOG.debug("executor plugin opts of <{0}> loaded".format(self.cfg.executor))
             except ConfigError:
                 self._executor_plugin_opts = {}
-                LOG.warning("no executor opts config found, {0}".format(errno()))
+                LOG.warning("no executor opts configuration found for plugin <0>".format(self.cfg.executor))
         return self._executor_plugin(targets, **self._executor_plugin_opts.dict_opts)
-
-    def release_plugin(self, apptype):
-        for RH in self.release_plugins:
-            if RH.htype() == apptype:
-                return RH
-        return None

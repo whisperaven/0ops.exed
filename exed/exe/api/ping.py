@@ -2,8 +2,9 @@
 
 import cherrypy
 
-from exe.runner import PingRunner
 from .handler import CommonHandler
+
+from exe.runner import PingRunner
 
 
 @cherrypy.expose

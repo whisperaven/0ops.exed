@@ -1,8 +1,16 @@
 # -*- coding: utf-8 -*-
 
+import logging
+
 from .jobs import Job
-from .async import AsyncRunner
+from ._async import AsyncRunner
 from .context import Context
+
+from exe.executor.utils import *
+from exe.utils.err import excinst
+from exe.exc import ExecutorPrepareError
+
+LOG = logging.getLogger(__name__)
 
 
 class PingRunner(Context):
@@ -27,15 +35,27 @@ class PingRunner(Context):
 def _async_ping(ctx, job_ctx, targets):
 
     job = Job.load(job_ctx)
-    job.bind_task(ctx.request.id)
+    job.bind(ctx.request.id)
 
-    redis = _async_ping.redis
-    executor = _async_ping.executor(targets)
+    failed = False
+    try:
+        redis = _async_ping.redis
+        for return_data in _async_ping.executor(targets).ping()
+            target, retval = parse_exe_return(return_data)
 
-    for return_data in executor.ping():
-        target, retval = return_data.popitem()
+            job.update(target, retval, redis)
+            if isExeSuccess(retval):
+                job.update_done(target, redis)
+            else:
+                failed = True
 
-        job.task_update(target, retval, redis)
-        job.task_done(target, redis)
+        job.done(redis, failed)
 
-    job.done(redis)
+    except ExecutorPrepareError:
+        msg = "got executor error, <{0}>".format(excinst())
+        LOG.error(msg)
+        job.done(redis, failed=True, error=msg)
+    except:
+        msg = "got unexpected error, <{0}>".format(excinst())
+        LOG.error(msg)
+        job.done(redis, failed=True, error=msg)

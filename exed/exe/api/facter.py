@@ -2,8 +2,9 @@
 
 import cherrypy
 
-from exe.runner import FacterRunner
 from .handler import CommonHandler
+
+from exe.runner import FacterRunner
 
 
 @cherrypy.expose

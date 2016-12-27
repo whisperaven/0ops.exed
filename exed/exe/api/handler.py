@@ -2,11 +2,11 @@
 
 import cherrypy
 
-from exe.exc import JobConflictError, JobNotExistsError, JobNotSupportedError
-from exe.utils.err import errno
-
 from .utils import *
 from .consts import *
+
+from exe.exc import JobConflictError, JobNotExistsError, JobNotSupportedError
+from exe.utils.err import excinst
 
 
 class EndpointHandler(object):
@@ -33,11 +33,11 @@ class EndpointHandler(object):
         try:
             return self._runner.handle(*args, **kwargs)
         except JobConflictError:
-            raise cherrypy.HTTPError(status.CONFLICT, errno().message)
+            raise cherrypy.HTTPError(status.CONFLICT, excinst().message)
         except JobNotExistsError:
-            raise cherrypy.HTTPError(status.NOT_FOUND, errno().message)
+            raise cherrypy.HTTPError(status.NOT_FOUND, excinst().message)
         except JobNotSupportedError:
-            raise cherrypy.HTTPError(status.INTERNAL_SERVER_ERROR, errno().message)
+            raise cherrypy.HTTPError(status.INTERNAL_SERVER_ERROR, excinst().message)
         except:
             cherrypy.log("error response 500", traceback=True)
             raise cherrypy.HTTPError(status.INTERNAL_SERVER_ERROR)

@@ -1,8 +1,16 @@
 # -*- coding: utf-8 -*-
 
+import logging
+
 from .jobs import Job
-from .async import AsyncRunner
+from ._async import AsyncRunner
 from .context import Context
+
+from exe.executor.utils import *
+from exe.utils.err import excinst
+from exe.exc import ExecutorPrepareError
+
+LOG = logging.getLogger(__name__)
 
 
 class FacterRunner(Context):
@@ -14,7 +22,6 @@ class FacterRunner(Context):
     def handle(ctx, targets, async=False):
         if not async:
             return ctx.executor(targets).facter()
-
         job = Job(targets, ctx.runner_name, ctx.runner_mutex)
         job.create(ctx.redis)
 
@@ -26,14 +33,27 @@ class FacterRunner(Context):
 def _async_facter(ctx, job_ctx, targets):
 
     job = Job.load(job_ctx)
-    job.bind_task(ctx.request.id)
+    job.bind(ctx.request.id)
 
-    redis = _async_facter.redis
-    executor = _async_facter.executor(targets)
+    failed = False
+    try:
+        redis = _async_facter.redis
+        for return_data in _async_facter.executor(targets).facter():
+            target, retval = parse_exe_return(return_data)
 
-    for return_data in executor.facter():
-        target, retval = return_data.popitem()
-        job.task_update(target, retval, redis)
-        job.task_done(target, redis)
+            job.update(target, retval, redis)
+            if isExeSuccess(retval):
+                job.update_done(retval)
+            else:
+                failed = True
 
-    job.done(redis)
+        job.done(redis, failed)
+
+    except ExecutorPrepareError:
+        msg = "got executor error, <{0}>".format(excinst())
+        LOG.error(msg)
+        job.done(redis, failed=True, error=msg)
+    except:
+        msg = "got unexpected error, <{0}>".format(excinst())
+        LOG.error(msg)
+        job.done(redis, failed=True, error=msg)

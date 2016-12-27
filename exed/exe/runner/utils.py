@@ -7,7 +7,7 @@ from celery import bootsteps
 
 from exe.cfg import cfgread
 from exe.exc import ConfigError
-from exe.utils.err import errno
+from exe.utils.err import excinst 
 
 from .context import Context
 
@@ -45,6 +45,6 @@ class CeleryWorkerInit(bootsteps.Step):
             cfgread(exe_conf)
             celery_init(worker.app)
         except ConfigError:
-            LOG.error("error while try to parse config file, {0}".format(errno()))
+            LOG.error("error while try to parse config file, {0}".format(excinst()))
             sys.exit(1)
 

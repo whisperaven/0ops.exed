@@ -7,7 +7,7 @@ from exe.api import APIServer
 from exe.runner import AsyncRunner, celery_init
 from exe.exc import ConfigError
 from exe.utils.log import logger_bootstrap
-from exe.utils.err import errno
+from exe.utils.err import excinst
 
 from .consts import *
 from .parse import exe_argparse, exe_cfgparse
@@ -32,7 +32,7 @@ def exe_main():
         api.set_access_log(access_log)
 
     except ConfigError:
-        LOG.error("error while try to parse config file, {0}".format(errno()))
+        LOG.error("error while try to parse config file, {0}".format(excinst()))
         sys.exit(1)
 
     api.run(args.daemon)

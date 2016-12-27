@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 
-import six
-import cherrypy
-
 try:
     from urllib.parse import unquote
 except ImportError:
     from urllib import unquote
 
-from exe.runner import ExecuteRunner
+import six
+import cherrypy
 
 from .utils import *
 from .consts import *
 from .handler import EndpointHandler
+
+from exe.runner import ExecuteRunner
 
 
 @cherrypy.expose

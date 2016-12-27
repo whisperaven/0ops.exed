@@ -16,7 +16,7 @@ AsyncRunner.user_options['worker'].add(celery_worker_arguments)
 AsyncRunner.steps['worker'].add(CeleryWorkerInit)
 
 
-## Fix Celery Issues ##
+## Fix Celery Multiprocessing/Billiard Issues ##
 @worker_process_init.connect
 def fix_multiprocessing(**kwargs):
     ## Fix `AttributeError: 'Process' object has no attribute '_authkey'`

@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import json
-import cherrypy
 
-from exe.runner import JobQuerier
+import cherrypy
 
 from .utils import *
 from .consts import *
 from .handler import EndpointHandler
+
+from exe.runner import JobQuerier
 
 
 @cherrypy.expose

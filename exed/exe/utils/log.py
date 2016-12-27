@@ -4,7 +4,7 @@ import sys
 import logging
 
 from exe.exc import ConfigError
-from exe.utils.err import errno
+
 
 ## Consts ##
 LOG_LEVEL_MAPPER = dict(
@@ -19,7 +19,6 @@ LOG_FORMAT_DEFAULT = '%(asctime)-15s [%(levelname)s] %(message)s'
 
 def logger_bootstrap():
     """ Init stream logger before the real logger really. """
-
     logger = logging.getLogger()
     handler = logging.StreamHandler(sys.stdout)
     formatter = logging.Formatter(LOG_FORMAT_DEFAULT)
@@ -31,7 +30,6 @@ def logger_bootstrap():
 
 def logger_init(log_path="", log_level="", log_format=None):
     """ Open and config the root logger. """
-
     if not log_level:
         log_level = LOG_LEVEL_DEFAULT
     else:
@@ -60,7 +58,6 @@ def logger_init(log_path="", log_level="", log_format=None):
 
 def open_logfile(log_path=""):
     """ Return log handler by open log file. """
-
     if not log_path:
         handler = logging.StreamHandler(sys.stdout) 
     else:

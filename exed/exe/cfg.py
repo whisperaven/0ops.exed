@@ -6,15 +6,15 @@ except ImportError:
     from configparser import ConfigParser
 from copy import deepcopy
 
-
 from exe.exc import ConfigError
-from exe.utils.err import errno
+from exe.utils.err import excinst
 
 
 __all__ = ['CONF', 'ModuleOpts', 'cfgread']
 
 
 class _ConfigOpts(object):
+    """ Config content access. """
 
     def __init__(self):
         self.ctx = {}
@@ -39,12 +39,11 @@ class _ConfigOpts(object):
         if self.ctx.has_key(cfg_name):
             raise ConfigError("duplicated config section \"{0}\".".format(cfg_name))
         self.ctx[cfg_name] = cfg_dict
-
-
 CONF = _ConfigOpts()
 
 
 class ModuleOpts(object):
+    """ Config section access. """
 
     def __init__(self, name, opts):
         self._name = name
@@ -78,6 +77,7 @@ class ModuleOpts(object):
 
 
 def cfgread(config_file):
+    """ ConfigFile reader, register sections to global `CONF` instance. """
 
     cfg = ConfigParser()
     if not hasattr(cfg, 'read_file'):
@@ -88,7 +88,7 @@ def cfgread(config_file):
         cfg.read_file(cfp)
         cfp.close()
     except:
-        raise ConfigError("cannot open/read configfile, {0}".format(errno()))
+        raise ConfigError("cannot open/read configfile, {0}".format(excinst()))
 
     for _cs in cfg.sections():
         CONF.regisiter_opts(_cs, dict(zip(

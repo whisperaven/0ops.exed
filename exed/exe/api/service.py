@@ -2,12 +2,11 @@
 
 import cherrypy
 
-from exe.runner import ServiceRunner
-from exe.utils.err import errno
-
 from .utils import *
 from .consts import *
 from .handler import EndpointHandler
+
+from exe.runner import ServiceRunner
 
 
 def _state_parse(state):

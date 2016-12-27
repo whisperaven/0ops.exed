@@ -3,10 +3,12 @@
 import logging
 
 from .jobs import Job
-from .async import AsyncRunner
+from ._async import AsyncRunner
 from .context import Context
 
-from exe.executor.consts import *
+from exe.executor.utils import *
+from exe.utils.err import excinst
+from exe.exc import ExecutorPrepareError
 
 LOG = logging.getLogger(__name__)
 
@@ -20,7 +22,6 @@ class ExecuteRunner(Context):
     def handle(ctx, targets, command, async=False):
         if not async:
             return ctx.executor(targets).raw_execute(command)
-
         job = Job(targets, ctx.runner_name, ctx.runner_mutex)
         job.create(ctx.redis)
 
@@ -32,22 +33,27 @@ class ExecuteRunner(Context):
 def _async_execute(ctx, job_ctx, targets, command):
 
     job = Job.load(job_ctx)
-    job.bind_task(ctx.request.id)
-
-    redis = _async_execute.redis
-    executor = _async_execute.executor(targets)
+    job.bind(ctx.request.id)
 
     failed = False
-    for return_data in executor.raw_execute(command):
+    try:
+        redis = _async_execute.redis
+        for return_data in _async_execute.executor(targets).raw_execute(command):
+            target, retval = parse_exe_return(return_data)
 
-        target, retval = return_data.popitem()
-        job.task_update(target, retval, redis)
+            job.update(target, retval, redis)
+            if isExeSuccess(retval):
+                job.update_done(target, redis)
+            else:
+                failed = True
 
-        if int(retval.get(EXE_STATUS_ATTR)) in (EXE_FAILED, EXE_UNREACHABLE):
-            job.task_failure(target, redis)
-            failed = True
+        job.done(redis, failed)
 
-    if not failed:
-        job.done(redis)
-    else:
-        job.failure(redis)
+    except ExecutorPrepareError:
+        msg = "got executor error, <{0}>".format(excinst())
+        LOG.error(msg)
+        job.done(redis, failed=True, error=msg)
+    except:
+        msg = "got unexpected error, <{0}>".format(excinst())
+        LOG.error(msg)
+        job.done(redis, failed=True, error=msg)

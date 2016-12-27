@@ -3,5 +3,5 @@
 from sys import exc_info
 
 
-def errno():
+def excinst():
     return exc_info()[1]

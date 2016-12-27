@@ -5,11 +5,6 @@ import logging.handlers
 
 import cherrypy
 
-from exe.cfg import CONF, ModuleOpts
-from exe.exc import ConfigError
-from exe.utils.err import errno
-from exe.utils.log import open_logfile
-
 from .job import JobQueryHandler
 from .target import TargetHandler
 from .ping import PingHandler
@@ -19,6 +14,10 @@ from .service import ServiceHandler
 from .execute import ExecuteHandler
 from .release import ReleaseHandler
 from .utils import error_response
+
+from exe.cfg import CONF, ModuleOpts
+from exe.exc import ConfigError
+from exe.utils.log import open_logfile
 
 LOG = logging.getLogger(__name__)
 

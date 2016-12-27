@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 
+import logging
+
 from .jobs import Job
-from .async import AsyncRunner
+from ._async import AsyncRunner
 from .context import Context
 
-from exe.exc import JobNotSupportedError
-from exe.exc import ReleaseNotSupportedError
-from exe.executor.consts import *
+from exe.executor.utils import *
+from exe.utils.err import excinst
+from exe.exc import ExecutorPrepareError, JobNotSupportedError, ReleaseNotSupportedError
+
+LOG = logging.getLogger(__name__)
 
 
 class ReleaseRunner(Context):
@@ -25,12 +29,10 @@ class ReleaseRunner(Context):
         return query_result
 
     def handle(ctx, targets, appname, apptype, revision, rollback, extra_opts, async=False):
-
         if not async:   # This should never happen
             raise JobNotSupportedError("release can not run under block mode (you may hit a bug)")
         if not ctx.release_plugin(apptype):
-            raise ReleaseNotSupportedError("non supported release app {0}".format(apptype))
-
+            raise ReleaseNotSupportedError("non supported release type {0}".format(apptype))
         job = Job(targets, ctx.runner_name, ctx.runner_mutex)
         job.create(ctx.redis)
 
@@ -45,32 +47,44 @@ def _async_release(ctx, job_ctx, targets, appname, apptype, revision, rollback, 
     job = Job.load(job_ctx)
     job.bind_task(ctx.request.id)
 
-    redis = _async_release.redis
-    executor = _async_release.executor(targets)
-    rh = _async_release.release_plugin(apptype)(targets, appname, executor)
+    failures = []
+    try:
+        rh = _async_release.release_plugin(apptype)(targets, appname, executor)
+        redis = _async_release.redis
+        executor = _async_release.executor(targets)
 
-    returner = None
-    if rollback:
-        returner = rh.rollback(revision, **extra_opts)
-    else:
-        returner = rh.release(revision, **extra_opts)
+        returner = None
+        if rollback:
+            returner = rh.rollback(revision, **extra_opts)
+        else:
+            returner = rh.release(revision, **extra_opts)
 
-    failure = []
-    for return_data in returner:
+        for return_data in returner:
+            target, retval = parse_exe_return(return_data)
 
-        target, retval = return_data.popitem()
+            job.update(target, retval, redis)
+            if isExeFailure(retval):
+                failures.append(target)
 
-        job.task_update(target, retval, redis)
+        failed = True if failures else False
+        for target in targets:
+            if target not in failure:
+                job.update_done(target, redis)
+        job.done(redis, failed)
 
-        if int(retval.get(EXE_STATUS_ATTR)) in (EXE_FAILED, EXE_UNREACHABLE):
-            job.task_failure(target, redis)
-            failure.append(target)
-
-    for target in targets:
-        if target not in failure:
-            job.task_done(target, redis)
-
-    if not failure:
-        job.done(redis)
-    else:
-        job.failure(redis)
+    except (ExecutorPrepareError, ExecutorDeployError):
+        msg = "got executor error, <{0}>".format(excinst())
+        LOG.error(msg)
+        job.done(redis, failed=True, error=msg)
+    except ReleaseAbort:
+        msg = "release aborted by handler, <{0}>".format(excinst())
+        LOG.error(msg)
+        job.done(redis, failed=True, error=msg)
+    except ReleaseError:
+        msg = "release aborted, got unexpected error inside release handler, <{0}>".format(excinst())
+        LOG.error(msg)
+        job.done(redis, failed=True, error=msg)
+    except:
+        msg = "release aborted, got unexpected error, <{0}>".format(excinst())
+        LOG.error(msg)
+        job.done(redis, failed=True, error=msg)

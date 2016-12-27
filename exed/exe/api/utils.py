@@ -2,8 +2,8 @@
 
 import json
 import inspect
-import cherrypy
 
+import cherrypy
 from cherrypy._cptools import HandlerWrapperTool
 
 from .consts import *

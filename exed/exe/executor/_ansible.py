@@ -14,7 +14,7 @@ from ansible.executor.playbook_executor import PlaybookExecutor
 from ansible.executor.task_queue_manager import TaskQueueManager
 from ansible.parsing.splitter import parse_kv
 
-from exe.exc import ExecutorPrepareError
+from exe.exc import ExecutorPrepareError, ExecutorDeployError
 from exe.utils.path import make_abs_path
 
 from .consts import *
@@ -23,6 +23,7 @@ from .prototype import ExecutorPrototype
 
 ## ansible options ##
 class AnsibleOpts(object):
+    """ Ansible options helper. """
     
     def __init__(self, **kargs):
         for opt, val in kargs.items():
@@ -37,6 +38,7 @@ class AnsibleOpts(object):
 
 ## ansible reaper ##
 class AnsibleReaper(CallbackBase):
+    """ Ansible reaper for result collect, act as Ansible Callback. """
 
     REAPER_DONE = -1
 
@@ -138,7 +140,6 @@ class AnsibleReaper(CallbackBase):
         self._runner_return(result)
 
 
-## TODO: support dyn inventory/vars
 ## ansible executor ##
 class AnsibleExecutor(ExecutorPrototype):
     """ Executor implemented on top of ansible. """

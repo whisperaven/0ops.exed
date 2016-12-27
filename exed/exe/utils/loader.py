@@ -8,38 +8,41 @@ import importlib
 
 LOG = logging.getLogger(__name__)
 
+
 ## Consts ##
 PY_EXTS = (".pyc", ".py")
 
 
 class PluginLoader(object):
+    """ Find and load plugins by import modules from plugin directory. """
     
-    def __init__(self, module_pt, module_path, modules=[]):
+    def __init__(self, plugin_type, plugin_path):
+        """ Init loader object for plugin loading. """
+        self._pymodule_path = []
+        self._pymodule_name = []
+        self._plugin_pt = plugin_pt
+        self._plugins = None
 
-        self._module_path = []
-        self._module_name = []
-        self._module_pt = module_pt
-        self._modules = None
-
-        self._find_modules(module_path)
+        self._find_modules(plugin_path)
 
     @property
-    def modules(self):
-        if self._modules == None:
-            self._modules = self._load_modules()
-        return self._modules
+    def plugins(self):
+        """ Loaded plugins. """
+        if self._plugins == None:
+            self._plugins = self._load_plugins()
+        return self._plugins
 
-    def _load_modules(self):
-
+    def _load_plugins(self):
+        """ Load exe plugins from imported python modules. """
         _path = sys.path
         _modules = []
 
-        sys.path = self._module_path
-        for mod in self._module_name:
+        sys.path = self._pymodule_path
+        for mod in self._pymodule_name:
             m = importlib.import_module(mod)
             for attr, obj in vars(m).items():
                 try:
-                    if issubclass(obj, self._module_pt) and obj != self._module_pt:
+                    if issubclass(obj, self._plugin_pt) and obj != self._plugin_pt:
                         _modules.append(obj)
                         LOG.info("module {0} loaded".format(obj))
                 except TypeError:   # issubclass() arg 1 must be a class
@@ -49,18 +52,19 @@ class PluginLoader(object):
         return _modules
 
     def _find_modules(self, module_path):
-
+        """ Find python modules from plugin directory. """
         if os.path.isfile(module_path):
             name, ext = os.path.splitext(os.path.basename(module_path))
-            if name != "__init__" and '.' not in name and ext in PY_EXTS:
-                self._module_path.append(os.path.dirname(module_path))
-                if name not in self._module_name:
-                    self._module_name.append(name)
-                    LOG.debug("find module file: <{0}>".format(module_path))
+            if name != "__init__" \
+                    and ext in PY_EXTS \
+                    and '.' not in name \
+                    and name not in self._module_name:
+                LOG.debug("find module file: <{0}>".format(module_path))
+                self._pymodule_path.append(os.path.dirname(module_path))
+                self._pymodule_name.append(name)
 
         elif os.path.isdir(module_path):
             LOG.debug("looking for module file in <{0}>".format(module_path))
             _files = [ f for f in os.listdir(module_path) if os.path.isfile(os.path.join(module_path, f)) ]
             for module_file in _files:
                 self._find_modules(os.path.join(module_path, module_file))
-

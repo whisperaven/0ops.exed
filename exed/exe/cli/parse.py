@@ -6,7 +6,7 @@ import argparse
 
 from exe.cfg import CONF, ModuleOpts, cfgread
 from exe.exc import ConfigError
-from exe.utils.err import errno
+from exe.utils.err import excinst
 from exe.utils.log import logger_init, open_logfile
 
 from .consts import *
@@ -49,6 +49,6 @@ def exe_logger_init(logcf):
         logger_init(logcf.error_log, logcf.log_level)
         return open_logfile(logcf.access_log)
     except IOError:
-        raise ConfigError("cannot open logfile for write, \"{0}\"".format(errno()))
+        raise ConfigError("cannot open logfile for write, \"{0}\"".format(excinst()))
     except ValueError:
         raise ConfigError("invalid log level")

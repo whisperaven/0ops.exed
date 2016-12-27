@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
 
+import logging
+
 from .jobs import Job
-from .async import AsyncRunner
+from ._async import AsyncRunner
 from .context import Context
 
-from exe.executor.consts import *
+from exe.executor.utils import *
+from exe.utils.err import excinst
+from exe.exc import ExecutorPrepareError
+
+LOG = logging.getLogger(__name__)
+
 
 class ServiceRunner(Context):
     """ Manipulate service on remote host. """
@@ -15,7 +22,6 @@ class ServiceRunner(Context):
     def handle(ctx, targets, name, start, restart, graceful, async=False):
         if not async:
             return ctx.executor(targets).service(name, start, restart, graceful)
-
         job = Job(targets, ctx.runner_name, ctx.runner_mutex)
         job.create(ctx.redis)
 
@@ -27,24 +33,29 @@ class ServiceRunner(Context):
 def _async_service(ctx, job_ctx, targets, name, start, restart, graceful):
 
     job = Job.load(job_ctx)
-    job.bind_task(ctx.request.id)
+    job.bind(ctx.request.id)
 
     redis = _async_deploy.redis
     executor = _async_deploy.executor(targets)
 
     failed = False
-    for return_data in executor.service(name, start, restart, graceful):
+    try:
+        for rdeturn_data in _async_service.executor(targets).service(name, start, restart, graceful):
+            target, retval = parse_exe_return(return_data)
 
-        target, retval = return_data.popitem()
-        job.task_update(target, retval, redis)
+            job.update(target, retval, redis)
+            if isExeSuccess(retval):
+                job.update_done(target, redis)
+            else:
+                failed = True
 
-        if retval in (EXE_FAILED, EXE_UNREACHABLE):
-            job.task_failure(target, redis)
-            failed = True
-        else:
-            job.task_done(target, redis)
+        job.done(redis, failed)
 
-    if not failed:
-        job.done(redis)
-    else:
-        job.failure(redis)
+    except ExecutorPrepareError:
+        msg = "got executor error, <{0}>".format(excinst())
+        LOG.error(msg)
+        job.done(redis, failed=True, error=msg)
+    except:
+        msg = "got unexpected error, <{0}>".format(excinst())
+        LOG.error(msg)
+        job.done(redis, failed=True, error=msg)

@@ -1,8 +1,14 @@
 # -*- coding: utf-8 -*-
 
+import abc
+
+import six
+
+
 RELEASE_HANDLER_UNSET = None
 
 
+@six.add_metaclass(abc.ABCMeta)
 class ReleaseHandlerPrototype(object):
 
     __RHANDLER_NAME__ = RELEASE_HANDLER_UNSET
@@ -33,14 +39,17 @@ class ReleaseHandlerPrototype(object):
     def executor(self):
         return self._executor
 
+    @abc.abstractmethod
     def release(self, revision, **extra_opts):
         """ Release revision on remote host(s). """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def rollback(self, revision, **extra_opts):
         """ Rollback using remote backups. """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def revision(self, **extra_opts):
         """ Gather content of revision records. """
         raise NotImplementedError

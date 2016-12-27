@@ -3,11 +3,11 @@
 import six
 import cherrypy
 
-from exe.runner import DeployRunner
-
 from .utils import *
 from .consts import *
 from .handler import EndpointHandler
+
+from exe.runner import DeployRunner
 
 
 @cherrypy.expose

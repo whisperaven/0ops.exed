@@ -47,6 +47,10 @@ class ExecutorNoMatchError(ExeError):
     pass
 
 
+class ExecutorDeployError(ExeError):
+    pass
+
+
 ## Release Errors ##
 class ReleaseError(ExeError):
     pass
