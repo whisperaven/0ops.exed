@@ -24,7 +24,6 @@ class ExecuteHandler(EndpointHandler):
     @cherrypy.tools.json_out()
     def GET(self, **params):
         """ Execute command on remote host. """
-
         target = parse_params_target(params)
         cmd = params.pop('cmd', None)
         if cmd == None:
@@ -41,7 +40,6 @@ class ExecuteHandler(EndpointHandler):
     @cherrypy.tools.json_out()
     def POST(self, **params):
         """ Execute command on remote host(s). """
-
         targets = cherrypy.request.json.pop('targets', None)
         if not targets or not isinstance(targets, list):
             raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_NO_TARGET)

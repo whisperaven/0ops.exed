@@ -24,5 +24,7 @@
 - Server Token
 
 # TODOs
+- Release
+- Code optimize
 - Notify callback
 - Job which not finished should not be deleted

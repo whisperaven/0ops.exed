@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import six
 import cherrypy
 
 from .utils import *
@@ -24,7 +25,6 @@ class ReleaseHandler(EndpointHandler):
     @cherrypy.tools.json_out()
     def POST(self):
         """ Release revision of app on remote host(s). """
-
         targets = cherrypy.request.json.pop('targets', None)
         if not targets or not isinstance(targets, list):
             raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_NO_TARGET)
@@ -32,8 +32,9 @@ class ReleaseHandler(EndpointHandler):
         appname = cherrypy.request.json.pop('appname', None)
         apptype = cherrypy.request.json.pop('apptype', None)
         revision = cherrypy.request.json.pop('revision', None)
-        if not appname or not apptype or not revision:
-            raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_BAD_APPPARAMS)
+        for val in (appname, apptype, revision):
+            if not val or not isinstance(val, six.text_type):
+                raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_BAD_APPPARAMS)
 
         rollback = cherrypy.request.json.pop('rollback', False)
         if not isinstance(rollback, bool):

@@ -31,7 +31,6 @@ class ServiceHandler(EndpointHandler):
     @cherrypy.tools.json_out()
     def GET(self, **params):
         """ Manipulate service on remote host. """
-
         name = params.pop('name', None)
         state = parse_params_int(params, 'state')
         target = parse_params_target(params)
@@ -53,7 +52,6 @@ class ServiceHandler(EndpointHandler):
     @cherrypy.tools.json_out()
     def POST(self):
         """ Manipulate service on remote host(s). """
-
         targets = cherrypy.request.json.pop('targets', None)
         if not targets or not isinstance(targets, list):
             raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_NO_TARGET)

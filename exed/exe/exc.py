@@ -52,6 +52,10 @@ class ExecutorDeployError(ExeError):
 
 
 ## Release Errors ##
+class ReleasePrepareError(ExeError):
+    pass
+
+
 class ReleaseError(ExeError):
     pass
 

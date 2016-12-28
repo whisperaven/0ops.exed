@@ -8,7 +8,9 @@ from .context import Context
 
 from exe.executor.utils import *
 from exe.utils.err import excinst
-from exe.exc import ExecutorPrepareError, JobNotSupportedError, ReleaseNotSupportedError
+from exe.exc import JobNotSupportedError, ReleaseNotSupportedError
+from exe.exc import ExecutorPrepareError, ExecutorDeployError
+from exe.exc import ReleasePrepareError, ReleaseError, ReleaseAbort
 
 LOG = logging.getLogger(__name__)
 
@@ -49,9 +51,13 @@ def _async_release(ctx, job_ctx, targets, appname, apptype, revision, rollback, 
 
     failures = []
     try:
-        rh = _async_release.release_plugin(apptype)(targets, appname, executor)
         redis = _async_release.redis
         executor = _async_release.executor(targets)
+
+        try:
+            rh = _async_release.release_plugin(apptype)(targets, appname, executor)
+        except TypeError:
+            raise ReleasePrepareError("{0} bad release plugin implementate.".format(excinst()))
 
         returner = None
         if rollback:
@@ -68,7 +74,7 @@ def _async_release(ctx, job_ctx, targets, appname, apptype, revision, rollback, 
 
         failed = True if failures else False
         for target in targets:
-            if target not in failure:
+            if target not in failures:
                 job.update_done(target, redis)
         job.done(redis, failed)
 
@@ -76,12 +82,16 @@ def _async_release(ctx, job_ctx, targets, appname, apptype, revision, rollback, 
         msg = "got executor error, <{0}>".format(excinst())
         LOG.error(msg)
         job.done(redis, failed=True, error=msg)
+    except ReleasePrepareError:
+        msg = "got release plugin error, <0>.".format(excinst())
+        LOG.error(msg)
+        job.done(redis, failed=True, error=msg)
     except ReleaseAbort:
-        msg = "release aborted by handler, <{0}>".format(excinst())
+        msg = "release aborted by plugin, <{0}>".format(excinst())
         LOG.error(msg)
         job.done(redis, failed=True, error=msg)
     except ReleaseError:
-        msg = "release aborted, got unexpected error inside release handler, <{0}>".format(excinst())
+        msg = "release aborted by plugin, got error <{0}>".format(excinst())
         LOG.error(msg)
         job.done(redis, failed=True, error=msg)
     except:

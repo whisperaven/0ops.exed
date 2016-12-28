@@ -3,6 +3,7 @@
 import json
 import inspect
 
+import six
 import cherrypy
 from cherrypy._cptools import HandlerWrapperTool
 

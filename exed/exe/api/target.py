@@ -23,7 +23,6 @@ class TargetHandler(EndpointHandler):
     @cherrypy.tools.json_out()
     def GET(self, **params):
         """ Match target(s) by given pattern. """
-
         pattern = params.pop('pattern', None)
         if pattern == None:
             pattern = '*'

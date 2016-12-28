@@ -8,9 +8,10 @@ import celery
 
 from exe.cfg import CONF
 from exe.cfg import ModuleOpts
-from exe.exc import ConfigError, ReleaseNotSupportedError
+from exe.exc import ConfigError, ExecutorPrepareError, ReleaseNotSupportedError
 from exe.release import ReleaseHandlerPrototype, HANDLERS
 from exe.executor import ExecutorPrototype, AnsibleExecutor, EXECUTORS
+from exe.utils.err import excinst
 from exe.utils.loader import PluginLoader
 
 LOG = logging.getLogger(__name__)
@@ -140,4 +141,7 @@ class Context(celery.Task):
             except ConfigError:
                 self._executor_plugin_opts = {}
                 LOG.warning("no executor opts configuration found for plugin <0>".format(self.cfg.executor))
-        return self._executor_plugin(targets, **self._executor_plugin_opts.dict_opts)
+        try:
+            return self._executor_plugin(targets, **self._executor_plugin_opts.dict_opts)
+        except TypeError:
+            raise ExecutorPrepareError("{0} bad executor implementate.".format(excinst()))

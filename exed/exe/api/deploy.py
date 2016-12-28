@@ -20,7 +20,6 @@ class DeployHandler(EndpointHandler):
     @cherrypy.tools.json_out()
     def POST(self):
         """ Deploy on remote host(s). """
-
         targets = cherrypy.request.json.pop('targets', None)
         if not targets or not isinstance(targets, list):
             raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_NO_TARGET)
