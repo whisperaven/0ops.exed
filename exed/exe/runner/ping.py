@@ -40,7 +40,7 @@ def _async_ping(ctx, job_ctx, targets):
     failed = False
     try:
         redis = _async_ping.redis
-        for return_data in _async_ping.executor(targets).ping()
+        for return_data in _async_ping.executor(targets).ping():
             target, retval = parse_exe_return(return_data)
 
             job.update(target, retval, redis)

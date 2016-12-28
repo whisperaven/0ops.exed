@@ -17,10 +17,12 @@
 - Plugin loader
 - Release handler
 
-# TODOs
-- Celery error handling
-- Notify callback
+## Version - 0.0.6 (Commit @ - 2016/Dec/28)
 - Log optimize
 - Job optimize
-- Job which not finished should not be deleted
+- Celery error handling
 - Server Token
+
+# TODOs
+- Notify callback
+- Job which not finished should not be deleted

@@ -3,6 +3,7 @@
 import os
 import sys
 import os.path
+import logging
 import multiprocessing
 
 from ansible.playbook.play import Play
@@ -14,11 +15,13 @@ from ansible.executor.playbook_executor import PlaybookExecutor
 from ansible.executor.task_queue_manager import TaskQueueManager
 from ansible.parsing.splitter import parse_kv
 
+from .consts import *
+from .prototype import ExecutorPrototype
+
 from exe.exc import ExecutorPrepareError, ExecutorDeployError
 from exe.utils.path import make_abs_path
 
-from .consts import *
-from .prototype import ExecutorPrototype
+LOG = logging.getLogger(__name__)
 
 
 ## ansible options ##
@@ -64,7 +67,6 @@ class AnsibleReaper(CallbackBase):
         self._item_ctx = item
 
     def _runner_return(self, result, ignore_errors=False):
-
         host = result._host.get_name()
 
         if result.is_skipped():
@@ -192,6 +194,9 @@ class AnsibleExecutor(ExecutorPrototype):
                 raise ExecutorPrepareError("{0}, bad sshkey file".format(sshkey))
         self._sshkey = sshkey
 
+        LOG.debug("init ansible executor with: "
+                "workdir <{0}>, inventory <{1}>, playbooks <{2}>, sshkey <{3}>".format(
+                    self._workdir, inventory, playbooks, self._sshkey))
         self._concurrency = concurrency if concurrency else self.FORK
         self._prepare()
 
@@ -243,7 +248,6 @@ class AnsibleExecutor(ExecutorPrototype):
 
     def _execute_playbooks(self, playbooks, extra_vars=None, partial=None):
         """ Execute ansible playbooks. """
-
         if partial is None:
             partial = self.DEFAULT_PARTIAL
         if not isinstance(playbooks, (list, tuple)):
@@ -267,7 +271,6 @@ class AnsibleExecutor(ExecutorPrototype):
 
     def execute(self, module, check_mode=False, **module_args):
         """ Invoke ansible module with given args on remote host(s). """
-
         # Handle raw module args
         args = module_args.pop(self.RAW_ARG, None) 
         if args is None:
@@ -287,6 +290,7 @@ class AnsibleExecutor(ExecutorPrototype):
                 tasks=[dict(name=name, action=dict(module=module, args=args))])
         play = Play.load(play_ds, variable_manager=self._varmanager, loader=self._loader)
 
+        LOG.debug("execute ansible module <{0}> with args <{1}> on <{2}>".format(module, args, self._hosts))
         worker = multiprocessing.Process(name="exec", target=self._run_tasks, args=(play, collector))
         worker.start()
 
@@ -294,49 +298,53 @@ class AnsibleExecutor(ExecutorPrototype):
 
     def raw_execute(self, cmd):
         """ Invoke ansible command module on remote host(s). """
-
         raw = {self.RAW_ARG: cmd}
-        _handler = lambda host, result: dict(**{
+        _handler = lambda host, result: {
             host: dict(
                 status=result.get(EXE_STATUS_ATTR),
                 stdout=result.get(EXE_RETURN_ATTR).pop('stdout', ""),
-                stderr=result.get(EXE_RETURN_ATTR).pop('stderr', ""), rtc=result.get(EXE_RETURN_ATTR).pop('rc', -1))})
+                stderr=result.get(EXE_RETURN_ATTR).pop('stderr', ""), 
+                rtc=result.get(EXE_RETURN_ATTR).pop('rc', -1))}
 
         for _out in self.execute(self.CMD_MODULE, **raw):
             yield _handler(*_out.popitem())
 
     def ping(self):
         """ Ping remote host(s). """
-        _handler = lambda host, result: dict(**{host: result.pop(EXE_STATUS_ATTR)})
+        _handler = lambda host, result: {
+                host: {
+                    EXE_STATUS_ATTR: result.get(EXE_STATUS_ATTR)}}
         for _out in self.execute(self.PING_MODULE):
             yield _handler(*_out.popitem())
 
     def facter(self):
         """ Gather information of remote host(s). """
-        _handler = lambda host, result: dict(**{
-            host: dict(status=result.get(EXE_STATUS_ATTR), facter=dict(
-                [ (attr, val) for attr, val in result.pop(EXE_RETURN_ATTR).iteritems()
-                    if attr not in (
-                        '_ansible_parsed', 'changed', '_ansible_no_log', 'cmd', 'failed', 
-                        'unreachable', 'rc', 'invocation', 'msg') ]))})
+        _handler = lambda host, result: {
+            host: {
+                EXE_STATUS_ATTR: result.get(EXE_STATUS_ATTR), 
+                'facter': dict(
+                    [ (attr, val) for attr, val in result.pop(EXE_RETURN_ATTR).iteritems()
+                        if attr not in (
+                            '_ansible_parsed', 'changed', '_ansible_no_log', 'cmd', 
+                            'failed', 'unreachable', 'rc', 'invocation', 'msg') ])}}
         for _out in self.execute(self.FACTER_MODULE):
             yield _handler(*_out.popitem())
 
     def service(self, name, start=True, restart=False, graceful=True):
         """ Manipulate service on remote host(s). """
-
         if restart:
             state = "reloaded" if graceful else "restarted"
         else:
             state = "started" if start else "stopped"
 
-        _handler = lambda host, result: dict(**{host: result.pop(EXE_STATUS_ATTR)})
+        _handler = lambda host, result: {
+                host: {
+                    EXE_STATUS_ATTR: result.pop(EXE_STATUS_ATTR)}}
         for _out in self.execute(self.SERVICE_MODULE, name=name, state=state):
             yield _handler(*_out.popitem())
 
     def deploy(self, roles, extra_vars=None, partial=None):
         """ Deploy service/role/app on remote host(s). """
-
         if extra_vars:
             if not isinstance(extra_vars, dict):
                 raise ExecutorDeployError("Bad extra_vars for deploy")

@@ -107,7 +107,9 @@ class Context(celery.Task):
         """ For runner subclass access release handler plugins. """
         if self._release_plugins == None:
             self._release_plugins = []
-            for RH in PluginLoader(ReleaseHandlerPrototype, self.cfg.modules).modules + HANDLERS:
+            plugins = PluginLoader(ReleaseHandlerPrototype, self.cfg.modules).plugins
+            plugins += HANDLERS
+            for RH in plugins:
                 self._release_plugins.append(RH)
             LOG.debug("release handler plugin loaded via PluginLoader")
         return self._release_plugins
@@ -122,9 +124,9 @@ class Context(celery.Task):
     def executor(self, targets=[]):
         """ For runner subclass access executor plugin. """
         if self._executor_plugin == None:
-            _executor_plugins = PluginLoader(ExecutorPrototype, self.cfg.modules).modules
-            _executor_plugins += EXECUTORS
-            for EXECUTOR in _executor_plugins:
+            plugins = PluginLoader(ExecutorPrototype, self.cfg.modules).plugins
+            plugins += EXECUTORS
+            for EXECUTOR in plugins:
                 if EXECUTOR.name() == self.cfg.executor:
                     self._executor_plugin = EXECUTOR
                     LOG.info("using executor: <{0}>".format(EXECUTOR.name()))

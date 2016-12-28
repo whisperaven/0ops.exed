@@ -9,3 +9,4 @@ exed/_exe/*
 
 # ---> others
 *.swp
+*.DS_Store

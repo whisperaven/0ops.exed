@@ -6,6 +6,8 @@ import sys
 import logging
 import importlib
 
+from exe.utils.err import excinst
+
 LOG = logging.getLogger(__name__)
 
 
@@ -14,9 +16,9 @@ PY_EXTS = (".pyc", ".py")
 
 
 class PluginLoader(object):
-    """ Find and load plugins by import modules from plugin directory. """
+    """ Find and load plugins from plugin directory. """
     
-    def __init__(self, plugin_type, plugin_path):
+    def __init__(self, plugin_pt, plugin_path):
         """ Init loader object for plugin loading. """
         self._pymodule_path = []
         self._pymodule_name = []
@@ -39,7 +41,10 @@ class PluginLoader(object):
 
         sys.path = self._pymodule_path
         for mod in self._pymodule_name:
-            m = importlib.import_module(mod)
+            try:
+                m = importlib.import_module(mod)
+            except ImportError:
+                LOG.error("bad module <{0}>, <{1}>".format(mod, excinst()))
             for attr, obj in vars(m).items():
                 try:
                     if issubclass(obj, self._plugin_pt) and obj != self._plugin_pt:
@@ -58,7 +63,7 @@ class PluginLoader(object):
             if name != "__init__" \
                     and ext in PY_EXTS \
                     and '.' not in name \
-                    and name not in self._module_name:
+                    and name not in self._pymodule_name:
                 LOG.debug("find module file: <{0}>".format(module_path))
                 self._pymodule_path.append(os.path.dirname(module_path))
                 self._pymodule_name.append(name)

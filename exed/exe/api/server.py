@@ -53,7 +53,6 @@ class APIServer(object):
     }
 
     def __init__(self):
-
         try:
             self._cfg = CONF.api
         except ConfigError:
@@ -78,6 +77,7 @@ class APIServer(object):
             'engine.autoreload.on': False,
             'request.show_tracebacks': False,
             'request.show_mismatched_params': False,
+            'response.headers.server': APIServer.SERVER_TOKEN,
             ## Custom Tools Opts ##
             'tools.delete_allow_header.on': True,
             'tools.fix_http_content_length.on': True,

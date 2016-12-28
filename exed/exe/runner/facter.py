@@ -43,7 +43,7 @@ def _async_facter(ctx, job_ctx, targets):
 
             job.update(target, retval, redis)
             if isExeSuccess(retval):
-                job.update_done(retval)
+                job.update_done(target, redis)
             else:
                 failed = True
 

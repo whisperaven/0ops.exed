@@ -82,8 +82,8 @@ class Job(object):
             return t
         return cls(**dict(
             targets = json.loads(t.pop('targets')),
-            operate = t.pop('operate')
-            state = int(t.pop('state'))
+            operate = t.pop('operate'),
+            state = int(t.pop('state')),
             error = t.pop('error')))
 
     @property
@@ -176,7 +176,7 @@ class Job(object):
         """
         redis.hmset(self._key(task.id), dict(
             state=Job.STATE_RUNNING, targets=json.dumps(self._targets),
-            operate=self._op))
+            operate=self._op, error=""))
         return task.id
 
     def bind(self, taskid):
@@ -198,15 +198,17 @@ class Job(object):
 
     def done(self, redis, failed=False, error=""):
         """ Mark job as done or failed if failure is `True`. """
-        if failure:
+        if failed:
             redis.publish("{0}:control".format(self._op), Job.FAILURE)
-            state = Job.FAILURE
+            state = Job.STATE_FAILURE
         else:
             redis.publish("{0}:control".format(self._op), Job.DONE)
-            state = Job.DONE
-        if error_message:
-            redis.hset(self._key(self._id), 'error', error)
-        return redis.hset(self._key(self._id), 'state', state)
+            state = Job.STATE_DONE
+        pipeline = redis.pipeline(False)
+        if error:
+            pipeline.hset(self._key(self._id), 'error', error)
+        pipeline.hset(self._key(self._id), 'state', state)
+        pipeline.execute()
 
     def reaper(self, redis):
         """ Reaper job and corresponding context (meta/data keys). """

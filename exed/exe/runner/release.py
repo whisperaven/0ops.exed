@@ -45,7 +45,7 @@ class ReleaseRunner(Context):
 def _async_release(ctx, job_ctx, targets, appname, apptype, revision, rollback, extra_opts):
 
     job = Job.load(job_ctx)
-    job.bind_task(ctx.request.id)
+    job.bind(ctx.request.id)
 
     failures = []
     try:

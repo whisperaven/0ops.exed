@@ -158,6 +158,7 @@ Transfer-Encoding: chunked
 
 {
     "state": 0, 
+    "error": "",
     "return_data": {},
     "operate": "deploy",
     "targets": [
@@ -204,7 +205,7 @@ HTTP/1.1 204 No Content
 - **404** - no such jobs
 - **500** - server error
 
-## Operate Endpoints (Block/Sync Modes)
+## Operate Endpoints (Block/Sync Mode)
 ### Ping (Block Mode)
 ``` GET /ping ```
 
@@ -220,10 +221,10 @@ GET /ping?target=molten-core.0ops.io HTTP/1.1
 HTTP/1.1 200 OK
 Content-Type: application/json
 
-{"molten-core.0ops.io": 0}
+{"molten-core.0ops.io": {"status": 0}}
 ```
 
-0 -> ok with no changed (see ```Consts/Enum``` section for more details on operate state)
+status 0 -> ok with no changed (see ```Consts/Enum``` section for more details on operate state)
 
 ##### Query parameters:
 - **target (required)**: fqdn of remote host to ping.
@@ -284,7 +285,7 @@ GET /service?target=molten-core.0ops.io&state=2&name=nginx&graceful=1 HTTP/1.1
 HTTP/1.1 200 OK
 Content-Type: application/json
 
-{"molten-core.0ops.io": 4}
+{"molten-core.0ops.io": {"status": 4}}
 ```
 
 state 4 means ok with something changed (see ```Consts/Enum``` section for more details on operate state)
@@ -362,7 +363,7 @@ Content-Type: application/json
 			"127.0.0.1:8080",
 			"127.0.0.1:8081",
 		],
-		"server_name": "exe.0ops.io",
+		"server_name": "exe.0ops.io"
 	}
 }
 ```
