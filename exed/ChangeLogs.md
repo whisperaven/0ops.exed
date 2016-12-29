@@ -30,4 +30,6 @@
 # TODOs
 - Code optimize
 - Notify callback
+- Redis error handling
 - Job which not finished should not be deleted
+- Job cancel

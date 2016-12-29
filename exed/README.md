@@ -522,5 +522,5 @@ Content-Type: application/json
 - **appname (required)** - String, name of app to release.
 - **apptype (required)** - String, type of release plugin to use.
 - **revision (required)** - String, the revision to release/rollback.
-- **extra_vars (required)** - Object, extra options to the release/rollback/revision method of release plugin.
+- **extra_opts** - Object, extra options to the release/rollback/revision method of release plugin.
 

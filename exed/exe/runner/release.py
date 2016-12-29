@@ -6,6 +6,7 @@ from .jobs import Job
 from ._async import AsyncRunner
 from .context import Context
 
+from exe.release.consts import *
 from exe.executor.utils import *
 from exe.utils.err import excinst
 from exe.exc import JobNotSupportedError, ReleaseNotSupportedError
@@ -13,10 +14,6 @@ from exe.exc import ExecutorPrepareError, ExecutorDeployError
 from exe.exc import ReleasePrepareError, ReleaseError, ReleaseAbort
 
 LOG = logging.getLogger(__name__)
-
-
-## Consts ##
-REVISION_QUERY = '?'
 
 
 class ReleaseRunner(Context):
@@ -66,11 +63,17 @@ def _async_release(ctx, job_ctx, targets, appname, apptype, revision, rollback, 
         returner = None
         try:
             if rollback:
+                LOG.debug("rollback to <{0}> using <{1}> with args <{2}> on <{3}>".format(
+                    revision, rh.hname(), extra_opts, rh.hosts))
                 returner = rh.rollback(revision, **extra_opts)
             else:
                 if revision == REVISION_QUERY:
+                    LOG.debug("query revision using <{0}> with args <{1}> on <{2}>".format(
+                        rh.hname(), extra_opts, rh.hosts))
                     returner = rh.revision(**extra_opts)
                 else:
+                    LOG.debug("release rev <{0}> using <{1}> with args <{2}> on <{3}>".format(
+                        revision, rh.hname(), extra_opts, rh.hosts))
                     returner = rh.release(revision, **extra_opts)
         except TypeError:
             raise ReleasePrepareError("{0} bad release plugin args".format(excinst()))
