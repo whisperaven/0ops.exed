@@ -77,6 +77,12 @@ Endpoint | Usage | Supported method
 /execute | Execute raw command on remote host(s) (non-block/async mode) | POST
 /deploy | Deploy service/role/app on remote host(s) (non-block/async mode) |POST
 
+## Release Endpoint Summary
+Endpoint | Usage | Supported method
+--- | --- | ---
+/release | Gather release plugins info | GET
+/release | Gather released revision or release new revision on remote host(s) | POST
+
 ## Errors
 
 - The Remote API uses standard HTTP status codes to indicate the success of failure of the API call. 
@@ -421,5 +427,100 @@ Content-Type: application/json
 {"jid": "eb1f4035-d62b-497f-9e3f-543e8e6f15f3"}
 ```
 
+- All job in async mode only return jid without block when job was created.
+
+##### JSON parameters:
 - Those api have same parameters of their corresponding method in **block/sync mode**.
 - The different here is async mode using **POST** with json data instead of **GET** with query string.
+
+##### Status codes:
+- **201** - job created
+- **400** - bad request/parameter
+- **500** - server error
+
+## Release Endpoings
+
+### Release plugins info (Block/Sync Mode)
+``` GET /release ```
+
+Gather release plugins info from server
+
+##### Example request:
+```
+GET /release HTTP/1.1
+```
+
+##### Example response:
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+[
+    {
+        "type": "common",
+        "name": "common_release"
+    },
+    {
+        "type": "something_else",
+        "name": "yet_another_release"
+    }
+]
+```
+
+- The server current have two release plugins loaded.
+
+##### Status codes:
+- **200** - no error
+- **400** - bad request/parameter
+- **500** - server error
+
+### Release/Rollback/GatherRevision (Non-Block/Async Mode)
+``` POST /release ```
+
+Release/Rollback/GatherRevision on remote host(s).
+
+##### Example request:
+```
+POST /release HTTP/1.1
+Content-Type: application/json
+
+{
+	"targets": [
+		"molten-core.0ops.io",
+		"karazhan.0ops.io",
+	],
+    "appname": "zerops", 
+    "apptype": "common", 
+    "revision": "1cc5aae96d61fd491f6dc626a06e3d3b792182b1", 
+    "rollback": false, 
+    "extra_opts": {
+        "giturl": "git@github.com:whisperaven/0ops.git",
+        "concurrency": 1,
+        "graceful_reload": false,
+        (...options...)
+    }
+}
+```
+
+##### Example response:
+```
+HTTP/1.1 201 Create
+Content-Type: application/json
+
+{"jid": "c4f6acd3-4dda-44d0-8f99-76b4587e55d0"}
+```
+
+- Job in async mode (not only release) only return jid without block when job was created.
+- **EXEd** doesn't known the detail about release, it just pass them to the release plugin, for this request, means:
+  - There should be an release plugin with **__RHANDLER_TYPE__ = "common"**.
+  - The **release** method of that plugin will invoked with **"release(revison, \*\*extra_opts)** as args.
+  - When **rollback** is **true**, the **rollback** method of that plugin will invoked with **rollback(revision, \*\*extra_opts)**.
+  - When **revision** is **?**, the **revision** method of that plugin will invoked with **revision(\*\*extra_opts)**
+
+##### JSON parameters:
+- **targets (required)** - String array, remote hosts to release.
+- **appname (required)** - String, name of app to release.
+- **apptype (required)** - String, type of release plugin to use.
+- **revision (required)** - String, the revision to release/rollback.
+- **extra_vars (required)** - Object, extra options to the release/rollback/revision method of release plugin.
+

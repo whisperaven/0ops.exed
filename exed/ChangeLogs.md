@@ -23,8 +23,11 @@
 - Celery error handling
 - Server Token
 
+## Version - 0.0.7 (Commit @ - 2016/Dec/29)
+- Release revison gather
+- Bug fix
+
 # TODOs
-- Release
 - Code optimize
 - Notify callback
 - Job which not finished should not be deleted

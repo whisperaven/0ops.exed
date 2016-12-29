@@ -15,6 +15,10 @@ from exe.exc import ReleasePrepareError, ReleaseError, ReleaseAbort
 LOG = logging.getLogger(__name__)
 
 
+## Consts ##
+REVISION_QUERY = '?'
+
+
 class ReleaseRunner(Context):
     """ Release revision of app on remote host. """
 
@@ -57,13 +61,19 @@ def _async_release(ctx, job_ctx, targets, appname, apptype, revision, rollback, 
         try:
             rh = _async_release.release_plugin(apptype)(targets, appname, executor)
         except TypeError:
-            raise ReleasePrepareError("{0} bad release plugin implementate.".format(excinst()))
+            raise ReleasePrepareError("{0} bad release plugin implementate".format(excinst()))
 
         returner = None
-        if rollback:
-            returner = rh.rollback(revision, **extra_opts)
-        else:
-            returner = rh.release(revision, **extra_opts)
+        try:
+            if rollback:
+                returner = rh.rollback(revision, **extra_opts)
+            else:
+                if revision == REVISION_QUERY:
+                    returner = rh.revision(**extra_opts)
+                else:
+                    returner = rh.release(revision, **extra_opts)
+        except TypeError:
+            raise ReleasePrepareError("{0} bad release plugin args".format(excinst()))
 
         for return_data in returner:
             target, retval = parse_exe_return(return_data)
@@ -83,7 +93,7 @@ def _async_release(ctx, job_ctx, targets, appname, apptype, revision, rollback, 
         LOG.error(msg)
         job.done(redis, failed=True, error=msg)
     except ReleasePrepareError:
-        msg = "got release plugin error, <0>.".format(excinst())
+        msg = "got release plugin error, <0>".format(excinst())
         LOG.error(msg)
         job.done(redis, failed=True, error=msg)
     except ReleaseAbort:
