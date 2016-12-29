@@ -80,7 +80,7 @@ class Job(object):
         t = redis.hgetall(cls._key(taskid))
         if not t:
             return t
-        return cls(**dict(
+        return cls(**dict(taskid = taskid,
             targets = json.loads(t.pop('targets')),
             operate = t.pop('operate'),
             state = int(t.pop('state')),
