@@ -27,6 +27,9 @@
 - Release revison gather
 - Bug fix
 
+## Version - 0.0.8 (Commit @ - 2016/Dec/29)
+- Add missing files
+
 # TODOs
 - Code optimize
 - Notify callback
