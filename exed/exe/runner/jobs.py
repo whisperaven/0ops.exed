@@ -142,7 +142,7 @@ class Job(object):
         Create job by create job context in redis, each job will create len(hosts) meta keys, 
             conflict dectection is done by redis key exists check of job meta keys. 
 
-        If no conflict, job context (the `meta_keys`) will created with redis pipeline 
+        If no conflict, job context (the `meta_keys`) will created via redis pipeline 
             to avoid operate confilct.
         """
         pipeline = redis.pipeline()

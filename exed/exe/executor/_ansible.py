@@ -260,6 +260,8 @@ class AnsibleExecutor(ExecutorPrototype):
         self._varmanager.extra_vars = extra_vars
         collector = AnsibleReaper()
 
+        LOG.debug("execute playbook <{0}> with extra_vars <{1}> and partial <{2}> on <{3}>".format(
+            playbooks, extra_vars, partial, self._hosts))
         worker = multiprocessing.Process(target=self._run_pbs, args=(playbooks, collector))
         worker.start()
 
