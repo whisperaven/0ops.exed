@@ -63,16 +63,16 @@ def _async_release(ctx, job_ctx, targets, appname, apptype, revision, rollback, 
         returner = None
         try:
             if rollback:
-                LOG.debug("rollback to <{0}> using <{1}> with args <{2}> on <{3}>".format(
+                LOG.info("rollback to <{0}> using <{1}> with args <{2}> on <{3}>".format(
                     revision, rh.hname(), extra_opts, rh.hosts))
                 returner = rh.rollback(revision, **extra_opts)
             else:
                 if revision == REVISION_QUERY:
-                    LOG.debug("query revision using <{0}> with args <{1}> on <{2}>".format(
+                    LOG.info("query revision using <{0}> with args <{1}> on <{2}>".format(
                         rh.hname(), extra_opts, rh.hosts))
                     returner = rh.revision(**extra_opts)
                 else:
-                    LOG.debug("release rev <{0}> using <{1}> with args <{2}> on <{3}>".format(
+                    LOG.info("release rev <{0}> using <{1}> with args <{2}> on <{3}>".format(
                         revision, rh.hname(), extra_opts, rh.hosts))
                     returner = rh.release(revision, **extra_opts)
         except TypeError:

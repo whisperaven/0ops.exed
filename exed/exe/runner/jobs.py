@@ -152,16 +152,16 @@ class Job(object):
                 if pipeline.exists(key):
                     raise JobConflictError("operate conflict, job already exists on some host(s)")
 
-            LOG.debug("going to create job meta data <{0}>".format(';'.join(self.meta_keys)))
+            LOG.info("going to create job meta data <{0}>".format(';'.join(self.meta_keys)))
             start = time.time()
             pipeline.multi()
             for key in self.meta_keys:
                 pipeline.hmset(key, dict(state=Job.STATE_RUNNING, start=start))
             pipeline.execute()
-            LOG.debug("job meta data create finished, <{0}>".format(';'.join(self.meta_keys)))
+            LOG.info("job meta data create finished, <{0}>".format(';'.join(self.meta_keys)))
 
         except WatchError:
-            LOG.debug("conflict detected on job meta data create <{0}>".format(';'.join(self.meta_keys)))
+            LOG.info("conflict detected on job meta data create <{0}>".format(';'.join(self.meta_keys)))
             raise JobConflictError("operate conflict, try again later")
         finally:
             pipeline.reset()

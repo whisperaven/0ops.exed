@@ -64,12 +64,12 @@ class PluginLoader(object):
                     and ext in PY_EXTS \
                     and '.' not in name \
                     and name not in self._pymodule_name:
-                LOG.debug("find module file: <{0}>".format(module_path))
+                LOG.info("find module file: <{0}>".format(module_path))
                 self._pymodule_path.append(os.path.dirname(module_path))
                 self._pymodule_name.append(name)
 
         elif os.path.isdir(module_path):
-            LOG.debug("looking for module file in <{0}>".format(module_path))
+            LOG.info("looking for module file in <{0}>".format(module_path))
             _files = [ f for f in os.listdir(module_path) if os.path.isfile(os.path.join(module_path, f)) ]
             for module_file in _files:
                 self._find_modules(os.path.join(module_path, module_file))

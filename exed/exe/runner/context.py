@@ -66,12 +66,12 @@ class Context(celery.Task):
         if self._cfg == None:
             try:
                 self._cfg = CONF.runner
-                LOG.debug("configuration of <runner> loaded")
+                LOG.info("configuration of <runner> loaded")
             except ConfigError:
                 self._cfg = ModuleOpts("", DEFAULT_CONF)
-                LOG.debug("no configuration found for <runner>, load default options")
+                LOG.info("no configuration found for <runner>, load default options")
             self._cfg.merge(DEFAULT_CONF)
-            LOG.debug("configuration of <runner> mearged")
+            LOG.info("configuration of <runner> mearged")
         return self._cfg
 
     @property
@@ -82,7 +82,7 @@ class Context(celery.Task):
             if not _concurrency:
                 _concurrency = DEFAULT_CONCURRENCY
             self._concurrency = _concurrency
-            LOG.debug("concurrency setting of <runner> loaded, value is {0}".format(_concurrency))
+            LOG.info("concurrency setting of <runner> loaded, value is {0}".format(_concurrency))
         return self._concurrency
 
     @property
@@ -100,7 +100,7 @@ class Context(celery.Task):
         """ For runner subclass redis access. """
         if not self._rpool:
             self._rpool = redis.ConnectionPool.from_url(url=self.cfg.redis_url)
-            LOG.debug("redis connection pool <{0}> created".format(self._rpool))
+            LOG.info("redis connection pool <{0}> created".format(self._rpool))
         return redis.Redis(connection_pool=self._rpool)
 
     @property
@@ -112,7 +112,7 @@ class Context(celery.Task):
             plugins += HANDLERS
             for RH in plugins:
                 self._release_plugins.append(RH)
-            LOG.debug("release handler plugin loaded via PluginLoader")
+            LOG.info("release handler plugin loaded via PluginLoader")
         return self._release_plugins
 
     def release_plugin(self, apptype):
@@ -137,7 +137,7 @@ class Context(celery.Task):
         if self._executor_plugin_opts == None:
             try:
                 self._executor_plugin_opts = CONF.module(self.cfg.executor)
-                LOG.debug("executor plugin opts of <{0}> loaded".format(self.cfg.executor))
+                LOG.info("executor plugin opts of <{0}> loaded".format(self.cfg.executor))
             except ConfigError:
                 self._executor_plugin_opts = {}
                 LOG.warning("no executor opts configuration found for plugin <0>".format(self.cfg.executor))

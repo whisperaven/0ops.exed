@@ -194,7 +194,7 @@ class AnsibleExecutor(ExecutorPrototype):
                 raise ExecutorPrepareError("{0}, bad sshkey file".format(sshkey))
         self._sshkey = sshkey
 
-        LOG.debug("init ansible executor with: "
+        LOG.info("init ansible executor with: "
                 "workdir <{0}>, inventory <{1}>, playbooks <{2}>, sshkey <{3}>".format(
                     self._workdir, inventory, playbooks, self._sshkey))
         self._concurrency = concurrency if concurrency else self.FORK
@@ -260,7 +260,7 @@ class AnsibleExecutor(ExecutorPrototype):
         self._varmanager.extra_vars = extra_vars
         collector = AnsibleReaper()
 
-        LOG.debug("execute playbook <{0}> with extra_vars <{1}> and partial <{2}> on <{3}>".format(
+        LOG.info("execute playbook <{0}> with extra_vars <{1}> and partial <{2}> on <{3}>".format(
             playbooks, extra_vars, partial, self._hosts))
         worker = multiprocessing.Process(target=self._run_pbs, args=(playbooks, collector))
         worker.start()
@@ -292,7 +292,7 @@ class AnsibleExecutor(ExecutorPrototype):
                 tasks=[dict(name=name, action=dict(module=module, args=args))])
         play = Play.load(play_ds, variable_manager=self._varmanager, loader=self._loader)
 
-        LOG.debug("execute ansible module <{0}> with args <{1}> on <{2}>".format(module, args, self._hosts))
+        LOG.info("execute ansible module <{0}> with args <{1}> on <{2}>".format(module, args, self._hosts))
         worker = multiprocessing.Process(name="exec", target=self._run_tasks, args=(play, collector))
         worker.start()
 
