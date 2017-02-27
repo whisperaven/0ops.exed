@@ -14,11 +14,13 @@ from ansible.plugins.callback import CallbackBase
 from ansible.executor.playbook_executor import PlaybookExecutor
 from ansible.executor.task_queue_manager import TaskQueueManager
 from ansible.parsing.splitter import parse_kv
+from ansible.errors import AnsibleError, AnsibleParserError, AnsibleUndefinedVariable, AnsibleFileNotFound
 
 from .consts import *
 from .prototype import ExecutorPrototype
 
 from exe.exc import ExecutorPrepareError, ExecutorDeployError
+from exe.utils.err import excinst
 from exe.utils.path import make_abs_path
 
 LOG = logging.getLogger(__name__)
@@ -95,9 +97,17 @@ class AnsibleReaper(CallbackBase):
                 EXE_RETURN_ATTR: result._result
                 }})
 
+    def reaper_exception(self, exc):
+        self._reaper_queue.put(exc)
+
     def reaper(self):
         while True:
             result = self._reaper_queue.get()
+            # riase the internal exception which wrapped
+            #   by the `try/except` block inside both
+            #   `self._run_pbs` and `self._run_tasks`.
+            if isinstance(result, Exception):
+                raise result
             if result == self.REAPER_DONE:
                 self._reaper_queue.close()
                 break
@@ -230,9 +240,23 @@ class AnsibleExecutor(ExecutorPrototype):
             options=self._opts,
             passwords=None,
             stdout_callback=reaper)
-        tqm.run(play)
-        tqm.cleanup()
-        reaper.done()
+        # with multiprocessing, the parent cannot handle exception riased
+        #   by the child process.
+        # which means, the try/except in the `runner._async_deploy` cannot
+        #   known what happened here, and cause the entire celery worker
+        #   process stop working without exit.
+        # Solution:
+        #   1, handle ansible exception here (inside executor).
+        #   2, cannot raise other exception in `except` block, because of
+        #       this piece of code may be run under other `fork()`.
+        #   3, because of <2>, we use `reaper` to tell outside something going wrong.
+        try:
+            tqm.run(play)
+        except AnsibleError:
+            reaper.reaper_exception(ExecutorPrepareError(str(excinst())))
+        finally:
+            tqm.cleanup()
+            reaper.done()
 
     def _run_pbs(self, playbooks, reaper):
         """ Init PBEX and run playbooks. """
@@ -243,7 +267,11 @@ class AnsibleExecutor(ExecutorPrototype):
             options=self._opts,
             passwords=None)
         pbex._tqm._stdout_callback = reaper
-        pbex.run()
+        # Same raeson with `self._run_tasks`
+        try:
+            pbex.run()
+        except AnsibleError:
+            reaper.reaper_exception(ExecutorPrepareError(str(excinst())))
         reaper.done()
 
     def _execute_playbooks(self, playbooks, extra_vars=None, partial=None):

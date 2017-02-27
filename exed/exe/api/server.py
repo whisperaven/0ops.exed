@@ -74,6 +74,7 @@ class APIServer(object):
             'log.access_file': "",
             'server.socket_host': self._cfg.listen,
             'server.socket_port': self._cfg.listen_port,
+            'server.thread_pool': 10,
             'engine.autoreload.on': False,
             'request.show_tracebacks': False,
             'request.show_mismatched_params': False,
