@@ -30,7 +30,7 @@ class ExecuteHandler(EndpointHandler):
             raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_BAD_SERVPARAMS)
         cmd = unquote(cmd)
 
-        result = next(self.handle(target, cmd), None)
+        result = self.handle(target, cmd)
         if not result:
             raise cherrypy.HTTPError(status.NOT_FOUND, ERR_NO_MATCH)
         else:

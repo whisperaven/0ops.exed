@@ -8,7 +8,7 @@ from .context import Context
 
 from exe.executor.utils import *
 from exe.utils.err import excinst
-from exe.exc import ExecutorPrepareError
+from exe.exc import ExecutorPrepareError, ExecutorNoMatchError
 
 LOG = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class PingRunner(Context):
     def handle(ctx, targets, async=False):
 
         if not async:
-            return ctx.executor(targets).ping()
+            return next(ctx.executor(targets).ping(), None)
         
         job = Job(targets, ctx.runner_name, ctx.runner_mutex)
         job.create(ctx.redis)
@@ -33,7 +33,6 @@ class PingRunner(Context):
 
 @AsyncRunner.task(bind=True, ignore_result=True, base=Context, serializer='json')
 def _async_ping(ctx, job_ctx, targets):
-
     job = Job.load(job_ctx)
     job.bind(ctx.request.id)
 
@@ -51,11 +50,11 @@ def _async_ping(ctx, job_ctx, targets):
 
         job.done(redis, failed)
 
-    except ExecutorPrepareError:
-        msg = "got executor error, <{0}>".format(excinst())
+    except (ExecutorPrepareError, ExecutorNoMatchError):
+        msg = "got executor error, {0}".format(excinst())
         LOG.error(msg)
         job.done(redis, failed=True, error=msg)
     except:
-        msg = "got unexpected error, <{0}>".format(excinst())
+        msg = "got unexpected error, {0}".format(excinst())
         LOG.error(msg)
         job.done(redis, failed=True, error=msg)

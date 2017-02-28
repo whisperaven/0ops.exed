@@ -15,7 +15,7 @@ class ExecutorPrototype(object):
 
     def __init__(self, hosts, timeout):
         self._slot = None
-        self._hosts = hosts
+        self._hosts = hosts if isinstance(hosts, (tuple, list)) else [hosts]
         self._timeout = timeout
 
     @classmethod
@@ -29,7 +29,7 @@ class ExecutorPrototype(object):
     def set_hosts(self, hosts):
         if self._slot == None:
             self._slot = self._hosts
-        self._hosts = hosts if isinstance(hosts, list) else [hosts]
+        self._hosts = hosts if isinstance(hosts, (tuple, list)) else [hosts]
 
     def reset_hosts(self):
         if self._slot != None:

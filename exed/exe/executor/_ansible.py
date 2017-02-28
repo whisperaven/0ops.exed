@@ -14,14 +14,14 @@ from ansible.plugins.callback import CallbackBase
 from ansible.executor.playbook_executor import PlaybookExecutor
 from ansible.executor.task_queue_manager import TaskQueueManager
 from ansible.parsing.splitter import parse_kv
-from ansible.errors import AnsibleError, AnsibleParserError, AnsibleUndefinedVariable, AnsibleFileNotFound
+from ansible.errors import AnsibleError
 
 from .consts import *
 from .prototype import ExecutorPrototype
 
-from exe.exc import ExecutorPrepareError, ExecutorDeployError
 from exe.utils.err import excinst
 from exe.utils.path import make_abs_path
+from exe.exc import ExecutorPrepareError, ExecutorDeployError, ExecutorNoMatchError
 
 LOG = logging.getLogger(__name__)
 
@@ -51,9 +51,13 @@ class AnsibleReaper(CallbackBase):
     CALLBACK_TYPE = 'stdout'
     CALLBACK_NAME = 'exe_executor'
 
-    def __init__(self):
+    def __init__(self, hosts):
         self._task_ctx = None
         self._item_ctx = None
+        # ansible doesn't have callback to tell us
+        #   there is no host matched, so we do that 
+        #   check by ourself by using this list.
+        self._hosts = hosts
         # ansible run jobs by `fork()` workers,
         #   shm will make those control vars synced.
         self._reaper_queue = multiprocessing.Queue()
@@ -110,8 +114,14 @@ class AnsibleReaper(CallbackBase):
                 raise result
             if result == self.REAPER_DONE:
                 self._reaper_queue.close()
+                if len(self._hosts) != 0:
+                    raise ExecutorNoMatchError("no host match <{0}>".format(", ".join(self._hosts)))
                 break
             else:
+                # check for no host match
+                host = result.keys()[0]
+                if host in self._hosts:
+                    self._hosts.remove(host)
                 yield result
 
     def done(self):
@@ -150,7 +160,6 @@ class AnsibleReaper(CallbackBase):
     def v2_runner_item_on_failed(self, result):
         self._set_item_ctx(result._result.get('item', None))
         self._runner_return(result)
-
 
 ## ansible executor ##
 class AnsibleExecutor(ExecutorPrototype):
@@ -286,7 +295,7 @@ class AnsibleExecutor(ExecutorPrototype):
 
         self._opts.tags = partial
         self._varmanager.extra_vars = extra_vars
-        collector = AnsibleReaper()
+        collector = AnsibleReaper(self._hosts)
 
         LOG.info("execute playbook <{0}> with extra_vars <{1}> and partial <{2}> on <{3}>".format(
             playbooks, extra_vars, partial, self._hosts))
@@ -314,7 +323,7 @@ class AnsibleExecutor(ExecutorPrototype):
 
         args = parse_kv(args.strip(), self._is_raw(module))
         name = "execute {0} on {1}".format(module, self._hosts)
-        collector = AnsibleReaper()
+        collector = AnsibleReaper(self._hosts)
 
         play_ds = dict(name=name, hosts=self._hosts, gather_facts="no",
                 tasks=[dict(name=name, action=dict(module=module, args=args))])

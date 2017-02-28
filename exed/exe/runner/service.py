@@ -8,7 +8,7 @@ from .context import Context
 
 from exe.executor.utils import *
 from exe.utils.err import excinst
-from exe.exc import ExecutorPrepareError
+from exe.exc import ExecutorPrepareError, ExecutorNoMatchError
 
 LOG = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class ServiceRunner(Context):
 
     def handle(ctx, targets, name, start, restart, graceful, async=False):
         if not async:
-            return ctx.executor(targets).service(name, start, restart, graceful)
+            return next(ctx.executor(targets).service(name, start, restart, graceful), None)
         job = Job(targets, ctx.runner_name, ctx.runner_mutex)
         job.create(ctx.redis)
 
@@ -31,7 +31,6 @@ class ServiceRunner(Context):
 
 @AsyncRunner.task(bind=True, ignore_result=True, base=Context, serializer='json')
 def _async_service(ctx, job_ctx, targets, name, start, restart, graceful):
-
     job = Job.load(job_ctx)
     job.bind(ctx.request.id)
 
@@ -51,7 +50,7 @@ def _async_service(ctx, job_ctx, targets, name, start, restart, graceful):
 
         job.done(redis, failed)
 
-    except ExecutorPrepareError:
+    except (ExecutorPrepareError, ExecutorNoMatchError):
         msg = "got executor error, <{0}>".format(excinst())
         LOG.error(msg)
         job.done(redis, failed=True, error=msg)

@@ -8,7 +8,7 @@ from .context import Context
 
 from exe.executor.utils import *
 from exe.utils.err import excinst
-from exe.exc import ExecutorPrepareError
+from exe.exc import ExecutorPrepareError, ExecutorNoMatchError
 
 LOG = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class ExecuteRunner(Context):
 
     def handle(ctx, targets, command, async=False):
         if not async:
-            return ctx.executor(targets).raw_execute(command)
+            return next(ctx.executor(targets).raw_execute(command), None)
         job = Job(targets, ctx.runner_name, ctx.runner_mutex)
         job.create(ctx.redis)
 
@@ -31,7 +31,6 @@ class ExecuteRunner(Context):
 
 @AsyncRunner.task(bind=True, ignore_result=True, base=Context, serializer='json')
 def _async_execute(ctx, job_ctx, targets, command):
-
     job = Job.load(job_ctx)
     job.bind(ctx.request.id)
 
@@ -49,11 +48,11 @@ def _async_execute(ctx, job_ctx, targets, command):
 
         job.done(redis, failed)
 
-    except ExecutorPrepareError:
-        msg = "got executor error, <{0}>".format(excinst())
+    except (ExecutorPrepareError, ExecutorNoMatchError):
+        msg = "got executor error, {0}".format(excinst())
         LOG.error(msg)
         job.done(redis, failed=True, error=msg)
     except:
-        msg = "got unexpected error, <{0}>".format(excinst())
+        msg = "got unexpected error, {0}".format(excinst())
         LOG.error(msg)
         job.done(redis, failed=True, error=msg)

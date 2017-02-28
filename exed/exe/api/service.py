@@ -42,7 +42,7 @@ class ServiceHandler(EndpointHandler):
         start, restart = _state_parse(state)
         graceful = parse_params_bool(params, 'graceful')
 
-        result = next(self.handle(target, name, start, restart, graceful), None)
+        result = self.handle(target, name, start, restart, graceful)
         if not result:
             raise cherrypy.HTTPError(status.NOT_FOUND, ERR_NO_MATCH)
         else:

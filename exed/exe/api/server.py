@@ -82,6 +82,7 @@ class APIServer(object):
             ## Custom Tools Opts ##
             'tools.delete_allow_header.on': True,
             'tools.fix_http_content_length.on': True,
+            'tools.unescape_response.on': True,
             ## Error Handling Opts ##
             'error_page.default': error_response,
         }

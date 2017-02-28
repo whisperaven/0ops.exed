@@ -8,7 +8,8 @@ from .context import Context
 
 from exe.executor.utils import *
 from exe.utils.err import excinst
-from exe.exc import JobNotSupportedError, ExecutorPrepareError, ExecutorDeployError
+from exe.exc import JobNotSupportedError
+from exe.exc import ExecutorPrepareError, ExecutorDeployError, ExecutorNoMatchError
 
 LOG = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ class DeployRunner(Context):
 
     def handle(ctx, targets, role, extra_vars, partial=None, async=True):
         if not async:   # This should never happen
-            raise JobNotSupportedError("deploy can not run under block mode (you may hit a bug)")
+            raise JobNotSupportedError("deploy can not run under block mode (you may hit a bug)") 
         job = Job(targets, ctx.runner_name, ctx.runner_mutex)
         job.create(ctx.redis)
 
@@ -31,7 +32,6 @@ class DeployRunner(Context):
 
 @AsyncRunner.task(bind=True, ignore_result=True, base=Context, serializer='json')
 def _async_deploy(ctx, job_ctx, targets, role, extra_vars, partial):
-
     job = Job.load(job_ctx)
     job.bind(ctx.request.id)
 
@@ -55,11 +55,11 @@ def _async_deploy(ctx, job_ctx, targets, role, extra_vars, partial):
                 job.update_done(target, redis)
         job.done(redis, failed)
 
-    except (ExecutorPrepareError, ExecutorDeployError):
-        msg = "got executor error, <{0}>".format(excinst())
+    except (ExecutorPrepareError, ExecutorDeployError, ExecutorNoMatchError):
+        msg = "got executor error, {0}".format(excinst())
         LOG.error(msg)
         job.done(redis, failed=True, error=msg)
     except:
-        msg = "got unexpected error, <{0}>".format(excinst())
+        msg = "got unexpected error, {0}".format(excinst())
         LOG.error(msg)
         job.done(redis, failed=True, error=msg)

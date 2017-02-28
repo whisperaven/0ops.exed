@@ -5,6 +5,7 @@ import cherrypy
 from .utils import *
 from .consts import *
 
+from exe.exc import ExecutorNoMatchError
 from exe.exc import JobConflictError, JobNotExistsError, JobNotSupportedError
 from exe.utils.err import excinst
 
@@ -34,10 +35,10 @@ class EndpointHandler(object):
             return self._runner.handle(*args, **kwargs)
         except JobConflictError:
             raise cherrypy.HTTPError(status.CONFLICT, excinst().message)
-        except JobNotExistsError:
-            raise cherrypy.HTTPError(status.NOT_FOUND, excinst().message)
         except JobNotSupportedError:
             raise cherrypy.HTTPError(status.INTERNAL_SERVER_ERROR, excinst().message)
+        except (JobNotExistsError, ExecutorNoMatchError):
+            raise cherrypy.HTTPError(status.NOT_FOUND, excinst().message)
         except:
             cherrypy.log("error response 500", traceback=True)
             raise cherrypy.HTTPError(status.INTERNAL_SERVER_ERROR)
@@ -50,7 +51,7 @@ class CommonHandler(EndpointHandler):
     def GET(self, **params):
         """ Work on remote host (block). """
         target = parse_params_target(params)
-        result = next(self.handle(target), None)
+        result = self.handle(target)
         if not result:
             raise cherrypy.HTTPError(status.NOT_FOUND, ERR_NO_MATCH)
         else:

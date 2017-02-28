@@ -2,12 +2,24 @@
 
 import json
 import inspect
+import logging
+
+try:
+    from html import unescape
+except ImportError:
+    unescape = None
+try:
+    from html.parser import HTMLParser
+except ImportError:
+    from HTMLParser import HTMLParser
 
 import six
 import cherrypy
 from cherrypy._cptools import HandlerWrapperTool
 
 from .consts import *
+
+LOG = logging.getLogger(__name__)
 
 
 ## Middware/CherrypyTools ##
@@ -26,6 +38,14 @@ def fix_http_content_length():
     if not inspect.isgenerator(response.body): # Dont do this in `stream` mode
         response.body = response.collapse_body().strip()
         response.headers['Content-Length'] = str(len(response.collapse_body())) 
+
+
+@cherrypy.tools.register('before_finalize')
+def unescape_response():
+    """ Unescape the html body which escaped by `_cpcompat.escape_html()`. """
+    response = cherrypy.serving.response
+    if not inspect.isgenerator(response.body): # Dont do this in `stream` mode
+        response.body = six.binary_type(unescape_html(response.collapse_body()))
 
 
 @cherrypy.tools.register('before_finalize')
@@ -58,6 +78,13 @@ def error_response(status, message, traceback, version):
 
 
 # Helpers #
+def unescape_html(content):
+    if unescape is not None:
+        return unescape(content)
+    else:
+        return HTMLParser().unescape(content)
+
+
 def parse_params_target(params):
     """ Get the `target` from request params or raise http 400 error. """
     try:
