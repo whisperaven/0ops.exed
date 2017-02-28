@@ -36,7 +36,9 @@ class ReleaseRunner(Context):
             raise JobNotSupportedError("release can not run under block mode (you may hit a bug)")
         if not ctx.release_plugin(apptype):
             raise ReleaseNotSupportedError("non supported release type {0}".format(apptype))
-        job = Job(targets, ctx.runner_name, ctx.runner_mutex)
+        job = Job(targets, ctx.runner_name, ctx.runner_mutex,
+                dict(appname=appname, apptype=apptype, revision=revision,
+                    rollback=rollback, extra_opts=extra_opts))
         job.create(ctx.redis)
 
         return job.associate_task(
@@ -86,8 +88,10 @@ def _async_release(ctx, job_ctx, targets, appname, apptype, revision, rollback, 
 
         failed = True if failures else False
         for target in targets:
-            if target not in failures:
-                job.update_done(target, redis)
+            op_failed = False
+            if target in failures:
+                op_failed = True
+            job.update_done(redis, target, True)
         job.done(redis, failed)
 
     except (ExecutorPrepareError, ExecutorDeployError, ExecutorNoMatchError):

@@ -6,7 +6,7 @@ from .utils import *
 from .consts import *
 
 from exe.exc import ExecutorNoMatchError
-from exe.exc import JobConflictError, JobNotExistsError, JobNotSupportedError
+from exe.exc import JobConflictError, JobNotExistsError, JobNotSupportedError, JobDeleteError
 from exe.utils.err import excinst
 
 
@@ -33,6 +33,8 @@ class EndpointHandler(object):
         """
         try:
             return self._runner.handle(*args, **kwargs)
+        except JobDeleteError:
+            raise cherrypy.HTTPError(status.BAD_REQUEST, excinst().message)
         except JobConflictError:
             raise cherrypy.HTTPError(status.CONFLICT, excinst().message)
         except JobNotSupportedError:

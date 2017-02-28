@@ -22,7 +22,7 @@ class ExecuteRunner(Context):
     def handle(ctx, targets, command, async=False):
         if not async:
             return next(ctx.executor(targets).raw_execute(command), None)
-        job = Job(targets, ctx.runner_name, ctx.runner_mutex)
+        job = Job(targets, ctx.runner_name, ctx.runner_mutex, dict(command=command))
         job.create(ctx.redis)
 
         return job.associate_task(
@@ -41,9 +41,9 @@ def _async_execute(ctx, job_ctx, targets, command):
             target, retval = parse_exe_return(return_data)
 
             job.update(target, retval, redis)
-            if isExeSuccess(retval):
-                job.update_done(target, redis)
-            else:
+            job.update_done(redis, target, isExeFailure(retval))
+
+            if isExeFailure(retval):
                 failed = True
 
         job.done(redis, failed)

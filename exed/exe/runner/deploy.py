@@ -23,7 +23,8 @@ class DeployRunner(Context):
     def handle(ctx, targets, role, extra_vars, partial=None, async=True):
         if not async:   # This should never happen
             raise JobNotSupportedError("deploy can not run under block mode (you may hit a bug)") 
-        job = Job(targets, ctx.runner_name, ctx.runner_mutex)
+        job = Job(targets, ctx.runner_name, ctx.runner_mutex,
+                dict(role=role, extra_vars=extra_vars, partial=partial))
         job.create(ctx.redis)
 
         return job.associate_task(
@@ -51,8 +52,10 @@ def _async_deploy(ctx, job_ctx, targets, role, extra_vars, partial):
 
         failed = True if failures else False
         for target in targets:
-            if target not in failures:
-                job.update_done(target, redis)
+            op_failed = False
+            if target in failures:
+                op_failed = True
+            job.update_done(redis, target, op_failed)
         job.done(redis, failed)
 
     except (ExecutorPrepareError, ExecutorDeployError, ExecutorNoMatchError):

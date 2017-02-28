@@ -165,8 +165,14 @@ Transfer-Encoding: chunked
 {
     "state": 0, 
     "error": "",
-    "return_data": {},
+    "startat": 1488272314,
     "operate": "deploy",
+    "operate_args": {
+        "role": "nginx",
+        "partial": null",
+        "extra_vars": {}
+    },
+    "return_data": {},
     "targets": [
         "molten-core.0ops.io", 
         "karazhan.0ops.io",

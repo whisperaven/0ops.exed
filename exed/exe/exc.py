@@ -33,6 +33,10 @@ class JobConflictError(ExeError):
     pass
 
 
+class JobDeleteError(ExeError):
+    pass
+
+
 ## ReleaseHandler Errors ##
 class ReleaseNotSupportedError(ExeError):
     pass

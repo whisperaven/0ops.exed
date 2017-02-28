@@ -20,10 +20,8 @@ class PingRunner(Context):
     __RUNNER_MUTEX_REQUIRED__ = False
 
     def handle(ctx, targets, async=False):
-
         if not async:
             return next(ctx.executor(targets).ping(), None)
-        
         job = Job(targets, ctx.runner_name, ctx.runner_mutex)
         job.create(ctx.redis)
         
@@ -43,9 +41,9 @@ def _async_ping(ctx, job_ctx, targets):
             target, retval = parse_exe_return(return_data)
 
             job.update(target, retval, redis)
-            if isExeSuccess(retval):
-                job.update_done(target, redis)
-            else:
+            job.update_done(redis, target, isExeFailure(retval))
+
+            if isExeFailure(retval):
                 failed = True
 
         job.done(redis, failed)

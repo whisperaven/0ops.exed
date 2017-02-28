@@ -10,7 +10,7 @@ from redis import WatchError
 
 from .context import Context
 
-from exe.exc import JobConflictError, JobNotExistsError
+from exe.exc import JobConflictError, JobNotExistsError, JobDeleteError
 from exe.executor.utils import *
 from exe.executor.consts import *
 
@@ -32,6 +32,8 @@ class JobQuerier(Context):
         if not job:
             raise JobNotExistsError("no such jid {0}".format(jid))
         if delete:
+            if job._state == Job.STATE_RUNNING:
+                raise JobDeleteError("cannot delete a running job")
             return job.reaper(redis)
         if outputs:
             job.load_data(redis)
@@ -52,18 +54,26 @@ class Job(object):
     DONE = "__DONE__"
     FAILURE = "__FAILURE__"
 
-    def __init__(self, targets, operate, mutex=True, state=None, taskid=None, error=""):
+    def __init__(self, targets, operate, mutex=True, 
+            operate_args={}, startat=0, utag=None, state=None, taskid=None, error=""):
         """ Create job context instance. """
         self._id = taskid
         self._op = operate
+        self._opargs = operate_args
         self._state = state
         self._targets = targets
+        self._startat = startat
+        self._utag = utag    # for avoid data keys conflict
 
         self._rdata = {}     # for store return data of job
         self._error = error  # for store error message of job
 
         if not mutex:
             self._op = self._op + ':' + self._random_tag
+        if not self._startat:
+            self._startat = int(time.time())
+        if not self._utag:
+            self._utag = self._random_tag
 
     @property
     def _random_tag(self):
@@ -84,6 +94,9 @@ class Job(object):
             targets = json.loads(t.pop('targets')),
             operate = t.pop('operate'),
             state = int(t.pop('state')),
+            utag = t.pop('utag'),
+            startat = int(t.pop('startat')),
+            operate_args = json.loads(t.pop('operate_args')),
             error = t.pop('error')))
 
     @property
@@ -94,6 +107,9 @@ class Job(object):
                 taskid=self._id,
                 targets=self._targets,
                 operate=self._op,
+                operate_args = self._opargs,
+                startat=self._startat,
+                utag=self._utag,
                 error=self._error)
 
     @property
@@ -102,9 +118,15 @@ class Job(object):
         ctx = copy.deepcopy(self.dict_ctx)
         ctx.pop('taskid', None)
         ctx.pop('mutex', None)
-        ctx['operate'] = ctx['operate'].split(':')[0]
+        ctx.pop('utag', None)
+        ctx['operate'] = self.operate
         ctx.update({EXE_RETURN_ATTR: self._rdata})
         return ctx
+
+    @property
+    def operate(self):
+        """ Parse/Format the operation name `self._op` of this job. """
+        return self._op.split(':')[0]
 
     @staticmethod
     def _key(taskid):
@@ -127,14 +149,13 @@ class Job(object):
 
     def _data_key(self, fqdn):
         """ Format redis key for return data. """
-        return "{0}:{1}:data".format(fqdn, self._op)
+        return "{0}:{1}:{2}:data".format(fqdn, self._op, self._utag)
 
     def load_data(self, redis):
         """ Load all return data of job from redis . """
         for key in self.data_keys:
             target = key.split(':')[0]
             rdata = redis.lrange(key, 0, -1)
-
             self._rdata.update({target: [ json.loads(retval) for retval in rdata ]})
 
     def create(self, redis):
@@ -153,10 +174,9 @@ class Job(object):
                     raise JobConflictError("operate conflict, job already exists on some host(s)")
 
             LOG.info("going to create job meta data <{0}>".format(';'.join(self.meta_keys)))
-            start = time.time()
             pipeline.multi()
             for key in self.meta_keys:
-                pipeline.hmset(key, dict(state=Job.STATE_RUNNING, start=start))
+                pipeline.hmset(key, dict(startat=self._startat))
             pipeline.execute()
             LOG.info("job meta data create finished, <{0}>".format(';'.join(self.meta_keys)))
 
@@ -174,9 +194,14 @@ class Job(object):
         When job was queried, this key will return, and using the targets/operate, we can
             find all job context by find their meta/data keys.
         """
-        redis.hmset(self._key(task.id), dict(
+        pipeline = redis.pipeline(False)
+        pipeline.hmset(self._key(task.id), dict(
             state=Job.STATE_RUNNING, targets=json.dumps(self._targets),
-            operate=self._op, error=""))
+            operate=self._op, operate_args=json.dumps(self._opargs), 
+            utag=self._utag, startat=self._startat, error=""))
+        for key in self.meta_keys:
+            pipeline.hset(key, 'associate', task.id)
+        pipeline.execute()
         return task.id
 
     def bind(self, taskid):
@@ -189,12 +214,15 @@ class Job(object):
         redis.publish("{0}:{1}".format(target, self._op), content)
         redis.rpush(self._data_key(target), content)
 
-        if not isExeSuccess(retval):
-            redis.hset(self._meta_key(target), 'state', Job.STATE_FAILURE)
-
-    def update_done(self, target, redis):
-        """ Update job context mark operate on target was done. """
-        redis.hset(self._meta_key(target), 'state', Job.STATE_DONE)
+    def update_done(self, redis, target, failed=False):
+        """ Logging and update Job Context when operate on target was done. """
+        if failed:
+            state = "failed"
+            if not self._error:
+                self._error = "some operations failed on {0}".format(target)
+        else:
+            state = "successed"
+        LOG.info("{0} operation on {1} of {2} was {3}".format(self.operate, target, self._id, state))
 
     def done(self, redis, failed=False, error=""):
         """ Mark job as done or failed if failure is `True`. """
@@ -204,16 +232,19 @@ class Job(object):
         else:
             redis.publish("{0}:control".format(self._op), Job.DONE)
             state = Job.STATE_DONE
+
+        if not error:
+            error = self._error
+
         pipeline = redis.pipeline(False)
-        if error:
-            pipeline.hset(self._key(self._id), 'error', error)
+        pipeline.hset(self._key(self._id), 'error', error)
         pipeline.hset(self._key(self._id), 'state', state)
+        pipeline.delete(*self.meta_keys)
         pipeline.execute()
 
     def reaper(self, redis):
         """ Reaper job and corresponding context (meta/data keys). """
         pipeline = redis.pipeline(False)
-        pipeline.delete(*self.meta_keys)
         pipeline.delete(*self.data_keys)
         pipeline.delete(self._key(self._id))
         pipeline.execute()

@@ -41,9 +41,9 @@ def _async_facter(ctx, job_ctx, targets):
             target, retval = parse_exe_return(return_data)
 
             job.update(target, retval, redis)
-            if isExeSuccess(retval):
-                job.update_done(target, redis)
-            else:
+            job.update_done(redis, target, isExeFailure(retval))
+
+            if isExeFailure(retval):
                 failed = True
 
         job.done(redis, failed)

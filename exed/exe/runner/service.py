@@ -22,7 +22,8 @@ class ServiceRunner(Context):
     def handle(ctx, targets, name, start, restart, graceful, async=False):
         if not async:
             return next(ctx.executor(targets).service(name, start, restart, graceful), None)
-        job = Job(targets, ctx.runner_name, ctx.runner_mutex)
+        job = Job(targets, ctx.runner_name, ctx.runner_mutex, 
+                dict(name=name, start=start, restart=restart, graceful=graceful))
         job.create(ctx.redis)
 
         return job.associate_task(
@@ -43,9 +44,9 @@ def _async_service(ctx, job_ctx, targets, name, start, restart, graceful):
             target, retval = parse_exe_return(return_data)
 
             job.update(target, retval, redis)
-            if isExeSuccess(retval):
-                job.update_done(target, redis)
-            else:
+            job.update_done(redis, target, isExeFailure(retval))
+
+            if isExeFailure(retval):
                 failed = True
 
         job.done(redis, failed)

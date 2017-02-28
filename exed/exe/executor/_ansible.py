@@ -2,8 +2,9 @@
 
 import os
 import sys
-import os.path
+import copy
 import logging
+import os.path
 import multiprocessing
 
 from ansible.playbook.play import Play
@@ -57,7 +58,7 @@ class AnsibleReaper(CallbackBase):
         # ansible doesn't have callback to tell us
         #   there is no host matched, so we do that 
         #   check by ourself by using this list.
-        self._hosts = hosts
+        self._hosts = copy.deepcopy(hosts)
         # ansible run jobs by `fork()` workers,
         #   shm will make those control vars synced.
         self._reaper_queue = multiprocessing.Queue()
@@ -285,7 +286,7 @@ class AnsibleExecutor(ExecutorPrototype):
 
     def _execute_playbooks(self, playbooks, extra_vars=None, partial=None):
         """ Execute ansible playbooks. """
-        if partial is None:
+        if partial is None or partial == "":
             partial = self.DEFAULT_PARTIAL
         if not isinstance(playbooks, (list, tuple)):
             playbooks = [playbooks]
