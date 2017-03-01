@@ -34,7 +34,7 @@ class DeployHandler(EndpointHandler):
 
         partial = cherrypy.request.json.pop('partial', None)
         if partial != None:
-            if not isinstance(partial, six.text_type):
+            if not isinstance(partial, six.text_type) or partial.strip() == "":
                 raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_BAD_PARTIAL)
 
         jid = self.handle(targets, role, extra_vars, partial, async=True)

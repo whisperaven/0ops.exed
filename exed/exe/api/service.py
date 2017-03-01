@@ -65,5 +65,5 @@ class ServiceHandler(EndpointHandler):
         start, restart = _state_parse(state)
         graceful = cherrypy.request.json.pop('graceful', False)
 
-        jid = self.handle(target, name, start, restart, graceful, async=True)
-        return response(status.CREATE, dict(jid=jid))
+        jid = self.handle(targets, name, start, restart, graceful, async=True)
+        return response(status.CREATED, dict(jid=jid))

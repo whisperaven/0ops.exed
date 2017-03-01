@@ -187,7 +187,6 @@ class AnsibleExecutor(ExecutorPrototype):
     def __init__(self, hosts=[], timeout=0, concurrency=0, 
             workdir=os.getcwd(), inventory=None, playbooks=None, sshkey=None):
         """ Prepare ansible context. """
-
         self._workdir = make_abs_path(workdir)
 
         inventory = inventory if inventory else self.INVENTORY
@@ -228,7 +227,7 @@ class AnsibleExecutor(ExecutorPrototype):
         self._varmanager = VariableManager()
         self._inventory = Inventory(loader=self._loader, variable_manager=self._varmanager, host_list=self._inventory_path)
         self._varmanager.set_inventory(self._inventory)  
-        self._opts = AnsibleOpts(forks=self._concurrency, private_key_file=self._sshkey)
+        self._opts = AnsibleOpts(forks=self._concurrency, private_key_file=self._sshkey, deprecation_warnings=False)
 
     def _reset_internal(self):
         """ Reset ansible internal data struts by invoke `_prepare` again. """
@@ -286,7 +285,7 @@ class AnsibleExecutor(ExecutorPrototype):
 
     def _execute_playbooks(self, playbooks, extra_vars=None, partial=None):
         """ Execute ansible playbooks. """
-        if partial is None or partial == "":
+        if partial is None:
             partial = self.DEFAULT_PARTIAL
         if not isinstance(playbooks, (list, tuple)):
             playbooks = [playbooks]

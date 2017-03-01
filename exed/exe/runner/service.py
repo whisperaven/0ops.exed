@@ -27,7 +27,7 @@ class ServiceRunner(Context):
         job.create(ctx.redis)
 
         return job.associate_task(
-            _async_deploy.delay(job.dict_ctx, targets, name, start, restart, graceful), ctx.redis)
+            _async_service.delay(job.dict_ctx, targets, name, start, restart, graceful), ctx.redis)
 
 
 @AsyncRunner.task(bind=True, ignore_result=True, base=Context, serializer='json')
@@ -35,12 +35,10 @@ def _async_service(ctx, job_ctx, targets, name, start, restart, graceful):
     job = Job.load(job_ctx)
     job.bind(ctx.request.id)
 
-    redis = _async_deploy.redis
-    executor = _async_deploy.executor(targets)
-
     failed = False
     try:
-        for rdeturn_data in _async_service.executor(targets).service(name, start, restart, graceful):
+        redis = _async_service.redis
+        for return_data in _async_service.executor(targets).service(name, start, restart, graceful):
             target, retval = parse_exe_return(return_data)
 
             job.update(target, retval, redis)
