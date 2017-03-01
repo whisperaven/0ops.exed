@@ -1,4 +1,4 @@
-# 0ops EXEd
+# EXEd
 
 **EXEd** is an api service which provide remote execute (including code release) on top of **exector plugins (e.g.: ansible/salt plugin)**
 
@@ -16,6 +16,10 @@ Operate State Changed | int | 4
 Service State Started | int | 0
 Service State Stoped | int | 1
 Service State Restarted | int | 2
+
+- Job State for async job.
+- Operate State for executor task.
+- Service State for service api endpoint.
 
 # CLI/Flags
 Flags | Usage | Default
@@ -40,7 +44,7 @@ log_level | log | log level of exe server | debug
 error_log | log | error log path | - (stdout)
 access_log | log | access log path | - (stdout)
 
-- the opts in log section doesn't affect celery worker
+- these options under log section doesn't affect celery worker
 
 # Executor Plugins Config
 Opts | Section | Usage | Default
@@ -49,6 +53,16 @@ workdir | ansible | ansible work dir | ${cwd}
 inventory | ansible | ansible inventory file/dir | inventory
 playbooks | ansible | ansible playbooks dir | playbooks
 sshkey | ansible | path to ssh private key file | -
+
+# Run it:
+```shell
+$ bin/exed -c etc/exe.conf -d                                   # start the api server
+$ celery worker -A exe.runner -l info --exe-conf etc/exe.conf   # start the celery worker
+```
+
+- Before you do that, you should have rabbitmq/redis server deployed.
+- Make sure both api/worker can access rabbitmq and redis server.
+- Make sure your ansible (including playbooks and inventory) was on the same machine with both api/worker.
 
 # EXEd Remote API
 
@@ -516,7 +530,7 @@ Content-Type: application/json
 {"jid": "c4f6acd3-4dda-44d0-8f99-76b4587e55d0"}
 ```
 
-- Job in async mode (not only release) only return jid without block when job was created.
+- Every Job in async mode (including ping/facter/service/etc.) only return jid without block when job was created.
 - **EXEd** doesn't known the detail about release, it just pass them to the release plugin, for this request, means:
   - There should be an release plugin with **\_\_RHANDLER_TYPE\_\_ = "common"**.
   - The **release** method of that plugin will invoked: **release(revison, \*\*extra_opts)**.
