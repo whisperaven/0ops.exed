@@ -84,6 +84,7 @@ def _async_release(ctx, job_ctx, targets, appname, apptype, revision, rollback, 
 
             job.update(target, retval, redis)
             if isExeFailure(retval):
+                LOG.error("F %s" % target)
                 failures.append(target)
 
         failed = True if failures else False
@@ -91,7 +92,7 @@ def _async_release(ctx, job_ctx, targets, appname, apptype, revision, rollback, 
             op_failed = False
             if target in failures:
                 op_failed = True
-            job.update_done(redis, target, True)
+            job.update_done(redis, target, op_failed)
         job.done(redis, failed)
 
     except (ExecutorPrepareError, ExecutorDeployError, ExecutorNoMatchError):
@@ -107,7 +108,7 @@ def _async_release(ctx, job_ctx, targets, appname, apptype, revision, rollback, 
         LOG.error(msg)
         job.done(redis, failed=True, error=msg)
     except ReleaseError:
-        msg = "release aborted by plugin, got error {0}".format(excinst())
+        msg = "release aborted by plugin, got error, {0}".format(excinst())
         LOG.error(msg)
         job.done(redis, failed=True, error=msg)
     except:
