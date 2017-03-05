@@ -23,10 +23,21 @@ class JobQuerier(Context):
     __RUNNER_NAME__ = "job"
     __RUNNER_MUTEX_REQUIRE__ = False
 
-    def handle(ctx, jid=None, outputs=False, follow=False, delete=False):
+    def handle(ctx, jid=None, outputs=False, follow=False, detail=False, delete=False):
         redis = ctx.redis
-        if not jid:
-            return [ j.split(':')[1] for j in redis.keys(Job._key('*')) ]
+        if not jid: # List mode
+            jids = [ j.split(':')[1] for j in redis.keys(Job._key('*')) ]
+            if not detail:
+                return jids 
+            jobs = []
+            for jid in jids:
+                job = Job.load_task(jid, redis)
+                if not job:
+                    LOG.warning("bad job <{0}> in redis, missing context".format(jid))
+                    continue
+                jobs.append(job.ctx)
+            return jobs
+
 
         job = Job.load_task(jid, redis)
         if not job:
@@ -116,7 +127,6 @@ class Job(object):
     def ctx(self):
         """ Dump job context for query request. """
         ctx = copy.deepcopy(self.dict_ctx)
-        ctx.pop('taskid', None)
         ctx.pop('mutex', None)
         ctx.pop('utag', None)
         ctx['operate'] = self.operate

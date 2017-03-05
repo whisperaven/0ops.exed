@@ -154,7 +154,10 @@ Content-Type: application/json
 ["eb1f4035-d62b-497f-9e3f-543e8e6f15f3", "c4f6acd3-4dda-44d0-8f99-76b4587e55d0", ...]
 ```
 
-Those are Job IDs (jid)
+- Those are Job IDs (jid)
+
+##### Query parameters:
+- **detail**: 1/True/true or 0/False/false, show job detail of each jobs. Only jids was returned by default.
 
 ##### Status codes:
 - **200** - no error
@@ -201,7 +204,7 @@ Transfer-Encoding: chunked
 - The server will using chunked transfer encoding when query with **follow=1**.
 
 ##### Query parameters:
-- **outputs**: 1/True/true or 0/False/false, show return data of each operations. Only Job State are shown by default.
+- **outputs**: 1/True/true or 0/False/false, show return data of each operations. Only Job State was returned by default.
 - **follow**: 1/True/true or 0/False/false, show return data of each operations using **follow** mode (http chunked).
 
 ##### Status codes:

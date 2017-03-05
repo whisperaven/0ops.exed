@@ -19,9 +19,10 @@ class JobQueryHandler(EndpointHandler):
 
     def GET(self, jid=None, **params):
         """ List or gather job info. """
+        detail = parse_params_bool(params, 'detail')
         follow = parse_params_bool(params, 'follow')
         outputs = parse_params_bool(params, 'outputs')
-        return response(status.OK, self.handle(jid, outputs, follow) )
+        return response(status.OK, self.handle(jid, outputs, follow, detail))
     GET._cp_config = {'tools.json_stream_output.on': True, 'response.stream': True}
 
     @cherrypy.tools.json_out()
