@@ -31,8 +31,8 @@ DEFAULT_CONF = {
 class Context(celery.Task):
     """ 
     Context Object which provide some runtime context for each runner, including
-        ConfigurationContext, RedisAccess, CeleryAsyncContext, RunnerAccess for 
-        both runner object and endpoint handler object.
+        ConfigurationContext, RedisAccess, CeleryAsyncContext for both runner and
+        endpoint handler object.
 
     All Runner should be subclass of this class with thier own `__RUNNER_NAME__`
         and `__RUNNER_MUTEX_REQUIRED__` attribute.
@@ -47,9 +47,10 @@ class Context(celery.Task):
             like config infomations or plugins.
         
         When celery worker starts,
-            The `Context` will be created by celery worker initialize the
-            runner instances before execute `CeleryWorkerInit`, which means
-            the `cfgread` has not run and `CONF` struct will be empty here.
+            The `Context` will be created by celery worker, initialize the
+            runner instances before invoke `__init__` of `CeleryWorkerInit`,
+            which means the `cfgread` has not yet invoked and `CONF` struct
+            will be empty here.
 
         So that, everything here is Lazy evaluation.
         """
@@ -105,7 +106,7 @@ class Context(celery.Task):
 
     @property
     def release_plugins(self):
-        """ For runner subclass access release handler plugins. """
+        """ For runner subclass access release handler plugin(s). """
         if self._release_plugins == None:
             self._release_plugins = []
             plugins = PluginLoader(ReleaseHandlerPrototype, self.cfg.modules).plugins

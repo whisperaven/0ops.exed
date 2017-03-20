@@ -78,7 +78,6 @@ class ModuleOpts(object):
 
 def cfgread(config_file):
     """ ConfigFile reader, register sections to global `CONF` instance. """
-
     cfg = ConfigParser()
     if not hasattr(cfg, 'read_file'):
         cfg.read_file = cfg.readfp

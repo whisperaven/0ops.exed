@@ -17,11 +17,9 @@ LOG = logging.getLogger(__name__)
 
 
 def exe_main():
-
     logger_bootstrap()
     
     try:
-
         args = exe_argparse()
         cf = exe_cfgparse(args.conf)
         logcf = exe_logger_cfgparse()

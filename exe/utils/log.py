@@ -18,7 +18,7 @@ LOG_FORMAT_DEFAULT = '%(asctime)-15s [%(levelname)s] %(message)s'
 
 
 def logger_bootstrap():
-    """ Init stream logger before the real logger really. """
+    """ Init stream logger before the real logger initialized. """
     logger = logging.getLogger()
     handler = logging.StreamHandler(sys.stdout)
     formatter = logging.Formatter(LOG_FORMAT_DEFAULT)

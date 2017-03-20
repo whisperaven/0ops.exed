@@ -37,8 +37,8 @@ class ReleaseRunner(Context):
         if not ctx.release_plugin(apptype):
             raise ReleaseNotSupportedError("non supported release type {0}".format(apptype))
         job = Job(targets, ctx.runner_name, ctx.runner_mutex,
-                dict(appname=appname, apptype=apptype, revision=revision,
-                    rollback=rollback, extra_opts=extra_opts))
+            dict(appname=appname, apptype=apptype, revision=revision,
+            rollback=rollback, extra_opts=extra_opts))
         job.create(ctx.redis)
 
         return job.associate_task(

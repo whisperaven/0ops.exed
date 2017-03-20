@@ -33,7 +33,7 @@ def params_check_target():
 
 @cherrypy.tools.register('before_finalize')
 def fix_http_content_length():
-    """ Reverse operate done by cherrypys `_be_ie_unfriendly`. """
+    """ Reverse operate done by cherrypy `_be_ie_unfriendly`. """
     response = cherrypy.serving.response
     if not inspect.isgenerator(response.body): # Dont do this in `stream` mode
         response.body = response.collapse_body().strip()

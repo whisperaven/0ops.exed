@@ -162,7 +162,7 @@ class Job(object):
         return "{0}:{1}:{2}:data".format(fqdn, self._op, self._utag)
 
     def load_data(self, redis):
-        """ Load all return data of job from redis . """
+        """ Load all return data from redis. """
         for key in self.data_keys:
             target = key.split(':')[0]
             rdata = redis.lrange(key, 0, -1)
@@ -199,10 +199,10 @@ class Job(object):
     def associate_task(self, task, redis):
         """ 
         Associate job context with celery AsyncResult (which returned by task.delay() 
-            of celcey) object by create job key with targets and operate in redis. 
+            of celcey) object, and create the job key with `targets` and `operate` in redis.
 
-        When job was queried, this key will return, and using the targets/operate, we can
-            find all job context by find their meta/data keys.
+        When job was queried, this job key will return, and using the targets/operate inside
+        that key, we can always find all job context by finding their meta/data keys.
         """
         pipeline = redis.pipeline(False)
         pipeline.hmset(self._key(task.id), dict(
@@ -253,7 +253,7 @@ class Job(object):
         pipeline.execute()
 
     def reaper(self, redis):
-        """ Reaper job and corresponding context (meta/data keys). """
+        """ Reaper/Delete job and corresponding context (meta/data keys). """
         pipeline = redis.pipeline(False)
         pipeline.delete(*self.data_keys)
         pipeline.delete(self._key(self._id))

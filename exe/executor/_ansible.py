@@ -57,9 +57,9 @@ class AnsibleReaper(CallbackBase):
         self._item_ctx = None
         # ansible doesn't have callback to tell us
         #   there is no host matched, so we do that 
-        #   check by ourself by using this list.
+        #   check by ourself using this list.
         self._hosts = copy.deepcopy(hosts)
-        # ansible run jobs by `fork()` workers,
+        # ansible run jobs after `fork()` workers,
         #   shm will make those control vars synced.
         self._reaper_queue = multiprocessing.Queue()
         self._playbook_mode = multiprocessing.Value('I', 0)
@@ -182,7 +182,7 @@ class AnsibleExecutor(ExecutorPrototype):
     INIT_PB = "_deploy.yml"
     ROLE_VAR = "_role"
     TARGET_VAR = "_targets"
-    DEFAULT_PARTIAL = "all"
+    DEFAULT_PARTIAL = ["all"]
 
     def __init__(self, hosts=[], timeout=0, concurrency=0, 
             workdir=os.getcwd(), inventory=None, playbooks=None, sshkey=None):
@@ -214,8 +214,8 @@ class AnsibleExecutor(ExecutorPrototype):
         self._sshkey = sshkey
 
         LOG.info("init ansible executor with: "
-                "workdir <{0}>, inventory <{1}>, playbooks <{2}>, sshkey <{3}>".format(
-                    self._workdir, inventory, playbooks, self._sshkey))
+            "workdir <{0}>, inventory <{1}>, playbooks <{2}>, sshkey <{3}>".format(
+            self._workdir, inventory, playbooks, self._sshkey))
         self._concurrency = concurrency if concurrency else self.FORK
         self._prepare()
 
@@ -326,7 +326,7 @@ class AnsibleExecutor(ExecutorPrototype):
         collector = AnsibleReaper(self._hosts)
 
         play_ds = dict(name=name, hosts=self._hosts, gather_facts="no",
-                tasks=[dict(name=name, action=dict(module=module, args=args))])
+            tasks=[dict(name=name, action=dict(module=module, args=args))])
         play = Play.load(play_ds, variable_manager=self._varmanager, loader=self._loader)
 
         LOG.info("execute ansible module <{0}> with args <{1}> on <{2}>".format(module, args, self._hosts))
@@ -351,8 +351,8 @@ class AnsibleExecutor(ExecutorPrototype):
     def ping(self):
         """ Ping remote host(s). """
         _handler = lambda host, result: {
-                host: {
-                    EXE_STATUS_ATTR: result.get(EXE_STATUS_ATTR)}}
+            host: {
+                EXE_STATUS_ATTR: result.get(EXE_STATUS_ATTR)}}
         for _out in self.execute(self.PING_MODULE):
             yield _handler(*_out.popitem())
 
@@ -377,8 +377,8 @@ class AnsibleExecutor(ExecutorPrototype):
             state = "started" if start else "stopped"
 
         _handler = lambda host, result: {
-                host: {
-                    EXE_STATUS_ATTR: result.pop(EXE_STATUS_ATTR)}}
+            host: {
+                EXE_STATUS_ATTR: result.pop(EXE_STATUS_ATTR)}}
         for _out in self.execute(self.SERVICE_MODULE, name=name, state=state):
             yield _handler(*_out.popitem())
 

@@ -1,65 +1,86 @@
 # EXEd
 
-**EXEd** is an api service which provide remote execute (including code release) on top of **exector plugins (e.g.: ansible/salt plugin)**.
+**EXEd** is an api service which provide remote execution (including code release) on top of **exector/release plugins (e.g.: ansible/salt plugin)**.
 
 # Consts/Enum
-Usage | Type | Value
----|---|---
-Job State Done | int | 0
-Job State Running | int | 1
-Job State Failure | int | 2
-Operate State OK | int | 0
-Operate State Skiped | int | 1
-Operate State Failed | int | 2
-Operate State Unreachable | int | 3
-Operate State Changed | int | 4
-Service State Started | int | 0
-Service State Stoped | int | 1
-Service State Restarted | int | 2
+| Usage                         | Type | Value |
+| ----------------------------- | ---- | ----- |
+| Job State - Done              | int  | 0     |
+| Job State - Running           | int  | 1     |
+| Job State - Failure           | int  | 2     |
+| Operation State - OK          | int  | 0     |
+| Operation State - Skiped      | int  | 1     |
+| Operation State - Failed      | int  | 2     |
+| Operation State - Unreachable | int  | 3     |
+| Operation State - Changed     | int  | 4     |
+| Service State - Started       | int  | 0     |
+| Service State - Stoped        | int  | 1     |
+| Service State - Restarted     | int  | 2     |
 
 - Job State for async job.
-- Operate State for executor task.
+- Operation State for executor task.
 - Service State for service api endpoint.
 
 # CLI/Flags
-Flags | Usage | Default
----|---|---
--h/--help | show usage | -
--v/--version | show version | -
--c/--conf | path to config file | ${cwd}/exed.conf
--d/--daemon | run as daemon | run frontground 
---exe-conf | celery worker ext args | -
+| Flags        | Usage                  | Default          |
+| ------------ | ---------------------- | ---------------- |
+| -h/--help    | show usage             | -                |
+| -v/--version | show version           | -                |
+| -c/--conf    | path to config file    | ${cwd}/exed.conf |
+| -d/--daemon  | run as daemon          | run frontground  |
+| --exe-conf   | celery worker ext args | -                |
 
 # Config
-Opts | Section | Usage | Default
----|---|---|---
-listen | api | api listen address | 127.0.0.1
-listen_port | api | api listen port | 16808
-pid_file | api | api server pidfile | - (no pidfile)
-executor | runner | executor plugin | ansible
-concurrency | runner | celery concurrency | ${nproc}
-redis_url | runner | redis connection info | redis://127.0.0.1:6379
-broker_url | runner | rmq connection info | amqp://guest:guest@localhost:5672//
-log_level | log | log level of exe server | debug
-error_log | log | error log path | - (stdout)
-access_log | log | access log path | - (stdout)
+| Opts        | Section | Usage                   | Default                             |
+| ----------- | ------- | ----------------------- | ----------------------------------- |
+| listen      | api     | api listen address      | 127.0.0.1                           |
+| listen_port | api     | api listen port         | 16808                               |
+| pid_file    | api     | api server pidfile      | - (no pidfile)                      |
+| executor    | runner  | executor plugin         | ansible                             |
+| concurrency | runner  | celery concurrency      | ${nproc}                            |
+| redis_url   | runner  | redis connection info   | redis://127.0.0.1:6379              |
+| broker_url  | runner  | rmq connection info     | amqp://guest:guest@localhost:5672// |
+| log_level   | log     | log level of exe server | debug                               |
+| error_log   | log     | error log path          | - (stdout)                          |
+| access_log  | log     | access log path         | - (stdout)                          |
 
 - these options under log section doesn't affect celery worker.
 
 # Executor Plugins Config
-Opts | Section | Usage | Default
----|---|---|---
-workdir | ansible | ansible work dir | ${cwd}
-inventory | ansible | ansible inventory file/dir | inventory
-playbooks | ansible | ansible playbooks dir | playbooks
-sshkey | ansible | path to ssh private key file | -
+| Opts      | Section | Usage                        | Default   |
+| --------- | ------- | ---------------------------- | --------- |
+| workdir   | ansible | ansible work dir             | ${cwd}    |
+| inventory | ansible | ansible inventory file/dir   | inventory |
+| playbooks | ansible | ansible playbooks dir        | playbooks |
+| sshkey    | ansible | path to ssh private key file | -         |
 
-- when use ansible executor plugin, there should be an init pb named "_deploy.yml".
-- the init pb should accept two vars: "_targets" and "_role".
+- when use ansible executor plugin, there should be an **init pb** named "_deploy.yml".
+
+- the **init pb** should accept two vars: "_targets" and "_role", for example:
+
+  ```
+  ## Deploy Playbook for zerops exed ##
+
+  ## with_items not support for multiple roles ##
+  ---
+  - name: "deploy {{ _role }} on remote host(s)."
+    hosts: "{{ _targets }}"
+    roles:
+      - "{{ _role }}"
+    vars_files:
+      - vars/common.yml
+      - vars/others.yml
+  ```
+
+- **Environmental configuration** of ansible is the only way to change ansible settings.
+
+- **Environmental configuration**: http://docs.ansible.com/ansible/intro_configuration.html#environmental-configuration).
 
 # Run it:
 ```shell
-$ pip install cherrypy six ansible "celery[redis]"              # install packages
+$ pip install cherrypy six ansible "celery[redis]"               # install packages
+$ export ANSIBLE_HOST_KEY_CHECKING=False
+$ export ANSIBLE_RETRY_FILES_ENABLED=False
 $ bin/exed -c etc/exed.conf -d                                   # start the api server
 $ celery worker -A exe.runner -l info --exe-conf etc/exed.conf   # start the celery worker
 ```
@@ -67,39 +88,39 @@ $ celery worker -A exe.runner -l info --exe-conf etc/exed.conf   # start the cel
 - Before you do that, you should have rabbitmq/redis server deployed.
 - Make sure both api/worker can access rabbitmq and redis server.
 - Make sure your ansible (including playbooks and inventory) was on the same machine with both api/worker.
+- **ANSIBLE_HOST_KEY_CHECKING/ANSIBLE_RETRY_FILES_ENABLED** are examples of how to pass ansible options via **Ansible Environmental configuration**.
 
 # EXEd Remote API
 
 ## Target/Hosts Endpoint Summary
-Endpoint | Usage | Supported method
---- | --- | ---
-/target${query_params} | Match and list remote hosts with given pattern | GET
+| Endpoint               | Usage                                    | Supported method |
+| ---------------------- | ---------------------------------------- | ---------------- |
+| /target${query_params} | Match and list remote hosts with given pattern | GET              |
 
 ## Jobs Endpoint Summary
-Endpoint | Usage | Supported method
---- | --- | ---
-/targets${query_params} | Match and list remote hosts with given pattern | GET
-/jobs/(jid)${query_params} | List all jobs or query specific job | GET
-/jobs/(jid) | Delete specific job | DELETE
+| Endpoint                   | Usage                               | Supported method |
+| -------------------------- | ----------------------------------- | ---------------- |
+| /jobs/(jid)${query_params} | List all jobs or query specific job | GET              |
+| /jobs/(jid)                | Delete specific job                 | DELETE           |
 
 ## Operate Endpoint Summary
-Endpoint | Usage | Supported method
---- | --- | ---
-/ping${query_params} | Ping remote host (block/sync mode) | GET
-/ping | Ping remote host(s) (non-block/async mode) | POST
-/facter${query_params} | Gather facter info of remote host (block/sync mode) | GET
-/facter | Gather facter info of remote host(s) (non-block/async mode) | POST
-/service${query_params} | Manipulate service on remote host (block/sync mode) | GET
-/service | Manipulate service on remote host(s) (non-block/async mode) | POST
-/execute${query_params} | Execute raw command on remote host (block/sync mode) | GET
-/execute | Execute raw command on remote host(s) (non-block/async mode) | POST
-/deploy | Deploy service/role/app on remote host(s) (non-block/async mode) |POST
+| Endpoint                | Usage                                    | Supported method |
+| ----------------------- | ---------------------------------------- | ---------------- |
+| /ping${query_params}    | Ping remote host (block/sync mode)       | GET              |
+| /ping                   | Ping remote host(s) (non-block/async mode) | POST             |
+| /facter${query_params}  | Gather facter info of remote host (block/sync mode) | GET              |
+| /facter                 | Gather facter info of remote host(s) (non-block/async mode) | POST             |
+| /service${query_params} | Manipulate service on remote host (block/sync mode) | GET              |
+| /service                | Manipulate service on remote host(s) (non-block/async mode) | POST             |
+| /execute${query_params} | Execute raw command on remote host (block/sync mode) | GET              |
+| /execute                | Execute raw command on remote host(s) (non-block/async mode) | POST             |
+| /deploy                 | Deploy service/role/app on remote host(s) (non-block/async mode) | POST             |
 
 ## Release Endpoint Summary
-Endpoint | Usage | Supported method
---- | --- | ---
-/release | Gather release plugins info | GET
-/release | Gather released revision or release new revision on remote host(s) | POST
+| Endpoint | Usage                                    | Supported method |
+| -------- | ---------------------------------------- | ---------------- |
+| /release | Gather release plugins info              | GET              |
+| /release | Gather released revision or release new revision on remote host(s) | POST             |
 
 ## Errors
 
@@ -158,7 +179,7 @@ Content-Type: application/json
 ["eb1f4035-d62b-497f-9e3f-543e8e6f15f3", "c4f6acd3-4dda-44d0-8f99-76b4587e55d0", ...]
 ```
 
-- Those are Job IDs (jid)
+- Those are Job IDs (jids)
 
 ##### Query parameters:
 - **detail**: 1/True/true or 0/False/false, show job detail of each jobs. Only jid(s) was returned by default.
@@ -238,7 +259,7 @@ HTTP/1.1 204 No Content
 - **404** - no such jobs
 - **500** - server error
 
-## Operate Endpoints (Block/Sync Mode)
+## Operation Endpoints (Block/Sync Mode)
 ### Ping (Block Mode)
 ``` GET /ping ```
 
@@ -257,7 +278,7 @@ Content-Type: application/json
 {"molten-core.0ops.io": {"status": 0}}
 ```
 
-status 0 -> ok with nothing changed (see ```Consts/Enum``` section for more details on operate state).
+status 0 -> ok with nothing changed (see ```Consts/Enum``` section for more details about operation state).
 
 ##### Query parameters:
 - **target (required)**: fqdn of remote host to ping.
@@ -293,7 +314,7 @@ Content-Type: application/json
 }
 ```
 
-again, state 0 means ok with nothing changed (see ```Consts/Enum``` section for more details on operate state).
+again, state 0 means ok with nothing changed (see ```Consts/Enum``` section for more details on operation state).
 
 ##### Query parameters:
 - **target (required)**: fqdn of remote host to gather facter from.
@@ -322,13 +343,13 @@ Content-Type: application/json
 {"molten-core.0ops.io": {"status": 4}}
 ```
 
-state 4 means ok with something changed (see ```Consts/Enum``` section for more details on operate state).
+state 4 means ok with something changed (see ```Consts/Enum``` section for more details on operation state).
 
 ##### Query parameters:
 - **target (required)**: fqdn of remote host to gather facter from.
-- **state (required)**: operate type (see ```Consts/Enum``` section for more details on service state enum)
+- **state (required)**: service desired state (see ```Consts/Enum``` section for more details on service state enum)
 - **name (required)**: service name.
-- **graceful**: 1/True/true or 0/False/false, do graceful restart (reload) when state is restarted. Default is false.
+- **graceful**: 1/True/true or 0/False/false, do graceful restart (reload) when state is *restarted*. Default is false.
 
 ##### Status codes:
 - **200** - no error
@@ -361,10 +382,10 @@ Content-Type: application/json
 }
 ```
 
-state 4 means ok with something changed (see ```Consts/Enum``` section for more details on operate state).
+state 4 means ok with something changed (see ```Consts/Enum``` section for more details on operation state).
 
 ##### Query parameters:
-- **target (required)**: fqdn of remote host to gather facter from.
+- **target (required)**: fqdn of remote host to run the command.
 - **cmd (required)**: command to run on remote host
 
 ##### Status codes:
@@ -411,12 +432,12 @@ Content-Type: application/json
 ```
 
 - Job in async mode (not only deploy) only return jid without block when job was created.
-- **EXEd** doesn't known the detail about role/partial/extra_vars, it just pass them to the executor plugin, for this request, with ansible plugin, which means:
+- **EXEd** doesn't known the detail about role/partial/extra_vars, it just pass them to the executor plugin, for this request, with ansible plugin, means:
   - There should be an ansible playbooks role with name **nginx**.
   - Inside that role, there should be a tag with name **reconfig**.
 
 ##### JSON parameters:
-- **targets (required)** - String array, remote hosts to deploy.
+- **targets (required)** - String array, remote host(s) to deploy.
 - **role (required)** - String, the role/app to deploy on remote hosts.
 - **partial** - String, only deploy things marked by this tag.
 - **extra_vars** - Object, vars which used by the role (e.g.: render config).
@@ -466,7 +487,7 @@ Content-Type: application/json
 - **400** - bad request/parameter
 - **500** - server error
 
-## Release Endpoings
+## Release Endpoints
 
 ### Release plugins info (Block/Sync Mode)
 ``` GET /release ```
@@ -505,7 +526,7 @@ Content-Type: application/json
 ### Release/Rollback/GatherRevision (Non-Block/Async Mode)
 ``` POST /release ```
 
-Release/Rollback/GatherRevision on remote host(s).
+Release/Rollback/GatherRevision on/from remote host(s).
 
 ##### Example request:
 ```
@@ -538,7 +559,7 @@ Content-Type: application/json
 {"jid": "c4f6acd3-4dda-44d0-8f99-76b4587e55d0"}
 ```
 
-- Every Job in async mode (including ping/facter/service/etc.) only return jid without block when job was created.
+- All Job in async mode only return jid without block when job was created.
 - **EXEd** doesn't care about the detail of release, it just pass args to the release plugin, for this request, means:
   - There should be an release plugin with **\_\_RHANDLER_TYPE\_\_ = "common"** defined.
   - The **release** method of that plugin will invoked like this: **release(revison, \*\*extra_opts)**.

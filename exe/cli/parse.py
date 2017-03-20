@@ -21,7 +21,6 @@ DEFAULT_LOG_CONF = {
 
 
 def exe_argparse():
-
     parser = argparse.ArgumentParser(description='Exed - Remote execute service of 0ops')
     parser.add_argument('-c', "--conf", dest="conf", action="store", 
         required=False, default=os.path.join(os.getcwd(), DEFAULT_CONFIG_FILE),

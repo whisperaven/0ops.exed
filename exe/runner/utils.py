@@ -17,7 +17,6 @@ LOG = logging.getLogger(__name__)
 ## Celery Worker Helpers ##
 def celery_init(c):
     """ Init/config celery instance using runner config. """
-
     ctx = Context()
     runner_cfg = ctx.cfg
 
@@ -30,18 +29,16 @@ def celery_init(c):
 
 def celery_worker_arguments(parser):
     parser.add_argument('--exe-conf', action="store", required=True, default="",
-        help="path to config file of exed service, "
-            "we need parse it before start celery worker.")
+        help="path to config file of exed service, we need parse it before start celery worker.")
 
 
 class CeleryWorkerInit(bootsteps.Step):
-    """ Celery will init Runners before execute this one. """
+    """ Celery will init `Runners` before invoke this one. """
 
     def __init__(self, worker, exe_conf="", **options):
         try:
             if not exe_conf:
-                raise ConfigError("no config file given, "
-                    "need parse exe conf before start celery worker.")
+                raise ConfigError("no config file given, need parse exe conf before start celery worker.")
             cfgread(exe_conf)
             celery_init(worker.app)
         except ConfigError:
