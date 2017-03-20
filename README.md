@@ -26,7 +26,7 @@ Flags | Usage | Default
 ---|---|---
 -h/--help | show usage | -
 -v/--version | show version | -
--c/--conf | path to config file | ${cwd}/exe.conf
+-c/--conf | path to config file | ${cwd}/exed.conf
 -d/--daemon | run as daemon | run frontground 
 --exe-conf | celery worker ext args | -
 
@@ -60,8 +60,8 @@ sshkey | ansible | path to ssh private key file | -
 # Run it:
 ```shell
 $ pip install cherrypy six ansible "celery[redis]"              # install packages
-$ bin/exed -c etc/exe.conf -d                                   # start the api server
-$ celery worker -A exe.runner -l info --exe-conf etc/exe.conf   # start the celery worker
+$ bin/exed -c etc/exed.conf -d                                   # start the api server
+$ celery worker -A exe.runner -l info --exe-conf etc/exed.conf   # start the celery worker
 ```
 
 - Before you do that, you should have rabbitmq/redis server deployed.

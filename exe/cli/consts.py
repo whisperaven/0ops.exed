@@ -3,4 +3,4 @@
 ## Consts ##
 API_SERVER = "api-server"
 WORKER = "worker"
-DEFAULT_CONFIG_FILE = "exe.conf"
+DEFAULT_CONFIG_FILE = "exed.conf"
