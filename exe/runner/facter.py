@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# (c) 2016, Hao Feng <whisperaven@gmail.com>
 
 import logging
 
@@ -10,17 +10,19 @@ from exe.executor.utils import *
 from exe.utils.err import excinst
 from exe.exc import ExecutorPrepareError, ExecutorNoMatchError
 
+
 LOG = logging.getLogger(__name__)
 
 
 class FacterRunner(Context):
-    """ Gather information of remote host. """
+    """ Gather information of remote host via Executor. """
 
     __RUNNER_NAME__ = "facter"
     __RUNNER_MUTEX_REQUIRED__ = False
 
-    def handle(ctx, targets, async=False):
-        if not async:
+    def handle(ctx, targets, run_async=False):
+        """ Handle remote facter request. """
+        if not run_async:
             return next(ctx.executor(targets).facter(), None)
         job = Job(targets, ctx.runner_name, ctx.runner_mutex)
         job.create(ctx.redis)
@@ -29,30 +31,44 @@ class FacterRunner(Context):
             _async_facter.delay(job.dict_ctx, targets), ctx.redis)
 
 
-@AsyncRunner.task(bind=True, ignore_result=True, base=Context, serializer='json')
+@AsyncRunner.task(bind=True, ignore_result=True,
+                  base=Context, serializer='json')
 def _async_facter(ctx, job_ctx, targets):
     job = Job.load(job_ctx)
     job.bind(ctx.request.id)
 
-    failed = False
     try:
         redis = _async_facter.redis
-        for return_data in _async_facter.executor(targets).facter():
-            target, retval = parse_exe_return(return_data)
 
-            job.update(target, retval, redis)
-            job.update_done(redis, target, isExeFailure(retval))
+        failed_targets = []
+        for yield_data in _async_facter.executor(targets).facter():
+            target, context = decompose_exec_yielddata(yield_data)
 
-            if isExeFailure(retval):
-                failed = True
+            # facter returns:
+            #   {$host -> {EXE_STATUS_ATTR -> $state (int),
+            #              'facts'         -> $fact_data (dict)}}
+            # just push these context to redis
+            job.push_return_data(target, context, redis)
 
-        job.done(redis, failed)
+            failed = execstate_failure(extract_return_state(context))
+            if failed:
+                failed_targets.append(target)
+
+            job.target_done(target, failed, redis)
+
+        msg = None
+        if failed_targets:
+            msg = "<{0}> of <{1}> remote host(s) got facts errors".format(
+                len(failed_targets), len(targets))
+        job.done(bool(failed_targets), msg, redis)
 
     except (ExecutorPrepareError, ExecutorNoMatchError):
-        msg = "got executor error, {0}".format(excinst())
+        msg = ("got executor error while gathering facts, "
+               "{0}").format(excinst())
         LOG.error(msg)
-        job.done(redis, failed=True, error=msg)
+        job.done(failed=True, errmsg=msg, redis=redis)
     except:
-        msg = "got unexpected error, {0}".format(excinst())
+        msg = ("got unexpected error while gathering facts, "
+               "{0}").format(excinst())
         LOG.error(msg)
-        job.done(redis, failed=True, error=msg)
+        job.done(failed=True, errmsg=msg, redis=redis)

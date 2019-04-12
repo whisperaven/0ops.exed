@@ -1,9 +1,6 @@
-# -*- coding: utf-8 -*-
+# (c) 2016, Hao Feng <whisperaven@gmail.com>
 
-try:
-    from urllib.parse import unquote
-except ImportError:
-    from urllib import unquote
+from urllib.parse import unquote
 
 import cherrypy
 
@@ -16,7 +13,7 @@ from exe.runner import TargetRunner
 
 @cherrypy.expose
 class TargetHandler(EndpointHandler):
-    """ Endpoint Handler: `/target`. """
+    """ Endpoint Handler: ``/target``. """
 
     __RUNNER__ = TargetRunner
 
@@ -28,5 +25,4 @@ class TargetHandler(EndpointHandler):
             pattern = '*'
         pattern = unquote(pattern)
 
-        return self.handle(pattern)
-        
+        return api_response(status.OK, self.handle(pattern))

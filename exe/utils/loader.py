@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# (c) 2016, Hao Feng <whisperaven@gmail.com>
 
 import os
 import os.path
@@ -6,7 +6,8 @@ import sys
 import logging
 import importlib
 
-from exe.utils.err import excinst
+from .err import excinst
+
 
 LOG = logging.getLogger(__name__)
 
@@ -19,9 +20,10 @@ class PluginLoader(object):
     """ Find and load plugins from plugin directory. """
     
     def __init__(self, plugin_pt, plugin_path):
-        """ Init loader object for plugin loading. """
+        """ Initialize PluginLoader instance. """
         self._pymodule_path = []
         self._pymodule_name = []
+
         self._plugin_pt = plugin_pt
         self._plugins = None
 
@@ -29,13 +31,13 @@ class PluginLoader(object):
 
     @property
     def plugins(self):
-        """ Loaded plugins. """
+        """ List of Loaded plugins. """
         if self._plugins == None:
             self._plugins = self._load_plugins()
         return self._plugins
 
     def _load_plugins(self):
-        """ Load exe plugins from imported python modules. """
+        """ Loading exe plugins from imported python modules. """
         _path = sys.path
         _modules = []
 
@@ -60,16 +62,15 @@ class PluginLoader(object):
         """ Find python modules from plugin directory. """
         if os.path.isfile(module_path):
             name, ext = os.path.splitext(os.path.basename(module_path))
-            if name != "__init__" \
-                    and ext in PY_EXTS \
-                    and '.' not in name \
-                    and name not in self._pymodule_name:
+            if (name != "__init__" and ext in PY_EXTS and
+                '.' not in name and name not in self._pymodule_name):
                 LOG.info("find module file: <{0}>".format(module_path))
                 self._pymodule_path.append(os.path.dirname(module_path))
                 self._pymodule_name.append(name)
 
         elif os.path.isdir(module_path):
             LOG.info("looking for module file in <{0}>".format(module_path))
-            _files = [ f for f in os.listdir(module_path) if os.path.isfile(os.path.join(module_path, f)) ]
+            _files = [ f for f in os.listdir(module_path)
+                         if os.path.isfile(os.path.join(module_path, f)) ]
             for module_file in _files:
                 self._find_modules(os.path.join(module_path, module_file))

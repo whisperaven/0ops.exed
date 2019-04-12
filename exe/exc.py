@@ -3,7 +3,7 @@
 
 ## Exceptions ##
 class ExeError(Exception):
-    """ Base exception for all errors raised from Exe code. """
+    """ Base exception for all errors raised from EXE code """
 
     def __init__(self, message=""):
         self.message = message
@@ -37,8 +37,8 @@ class JobDeleteError(ExeError):
     pass
 
 
-## ReleaseHandler Errors ##
-class ReleaseNotSupportedError(ExeError):
+## TaskRunner Errors ##
+class TaskNotSupportedError(ExeError):
     pass
 
 
@@ -55,14 +55,14 @@ class ExecutorDeployError(ExeError):
     pass
 
 
-## Release Errors ##
-class ReleasePrepareError(ExeError):
+## Task Errors ##
+class TaskPrepareError(ExeError):
     pass
 
 
-class ReleaseError(ExeError):
+class TaskError(ExeError):
     pass
 
 
-class ReleaseAbort(ExeError):
+class TaskAbort(ExeError):
     pass

@@ -1,43 +1,70 @@
-# -*- coding: utf-8 -*-
+# (c) 2016, Hao Feng <whisperaven@gmail.com>
 
 from .consts import *
 
 
-def isExeSuccess(retval):
-    """ Return `True` when retval with successful state. """
-    return retval.get(EXE_STATUS_ATTR) in EXE_SUCCESS_STATES
+__all__ = ["exec_success", "exec_failure", "execstate_name",
+           "execstate_success", "execstate_failure", "execstate_announce",
+           "decompose_exec_yielddata", "decompose_exec_returncontext",
+           "compose_exec_returncontext", "extract_return_state"]
 
 
-def isExeFailure(retval):
-    """ Return `True` when retval with failed state. """
-    return retval.get(EXE_STATUS_ATTR) in EXE_FAILURE_STATES
+def exec_success(return_context):
+    """ Return ``True`` when return context with successful state. """
+    return return_context.get(EXE_STATUS_ATTR) in EXE_SUCCESS_STATES
 
 
-def isExeSuccessState(state):
-    """ Return `True` when state is successful state. """
+def exec_failure(return_context):
+    """ Return ``True`` when return context with failed state. """
+    return return_context.get(EXE_STATUS_ATTR) in EXE_FAILURE_STATES
+
+
+def execstate_announce(state):
+    """ Return ``True`` when state is announce state. """
+    return state == EXE_ANNOUNCE
+
+
+def execstate_success(state):
+    """ Return ``True`` when state is successful state. """
     return state in EXE_SUCCESS_STATES
 
 
-def isExeFailureState(state):
-    """ Return `True` when state is failure state. """
+def execstate_failure(state):
+    """ Return ``True`` when state is failure state. """
     return state in EXE_FAILURE_STATES
 
 
-def parse_exe_return(return_data):
-    """ Parse and return `target, retval` of `Executor`s yield data. """
-    return return_data.popitem()
+def execstate_name(state):
+    """ Return string represent the name of that state. """
+    try:
+        return EXE_STATUS_MAP[state]
+    except KeyError: # this should never happen
+        return EXE_STATUS_MAP[EXE_FAILED]
 
 
-def parse_exe_retval(retval):
-    """ Parse and return `state, name, retval` of `Executor`s yield data. """
-    return retval.pop(EXE_STATUS_ATTR), retval.pop(EXE_NAME_ATTR, None), retval.pop(EXE_RETURN_ATTR, None)
+def decompose_exec_yielddata(yield_data):
+    """ Decompose ``Executor``s yield data, return a pair which contains
+    remote host and its return context represent as ``(host, context)``. """
+    return yield_data.popitem()
 
 
-def create_exe_retval(state, name, retval):
-    """ Create an exe retval dict with given `state, name, retval` data. """
-    return {EXE_STATUS_ATTR: state, EXE_NAME_ATTR: name, EXE_RETURN_ATTR: retval}
+def decompose_exec_returncontext(return_context):
+    """ Decompose ``Executor``s return data, return a tuple which contains
+    remote execution state and thier operation name and context represent
+    as ``(state, name, context)``. """
+    return (return_context.pop(EXE_STATUS_ATTR),
+            return_context.pop(EXE_NAME_ATTR, None),
+            return_context.pop(EXE_RETURN_ATTR, None))
 
 
-def exe_retval_state(retval):
-    """ Parse and return `state` of `Executor`s yield data. """
-    return retval.pop(EXE_STATUS_ATTR)
+def compose_exec_returncontext(state, name, return_context):
+    """ Compose an exec return data dict with given execution state and
+    operation name and return context dict or something else. """
+    return {EXE_STATUS_ATTR : state,
+            EXE_NAME_ATTR   : name,
+            EXE_RETURN_ATTR : return_context}
+
+
+def extract_return_state(return_context):
+    """ Extract return state from remote host's return context. """
+    return return_context.pop(EXE_STATUS_ATTR)

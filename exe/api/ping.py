@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# (c) 2016, Hao Feng <whisperaven@gmail.com>
 
 import cherrypy
 
@@ -9,6 +9,6 @@ from exe.runner import PingRunner
 
 @cherrypy.expose
 class PingHandler(CommonHandler):
-    """ Endpoint Handler: `/ping`. """
+    """ Endpoint Handler: ``/ping``. """
 
     __RUNNER__ = PingRunner

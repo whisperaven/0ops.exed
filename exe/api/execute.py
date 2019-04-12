@@ -1,11 +1,7 @@
-# -*- coding: utf-8 -*-
+# (c) 2016, Hao Feng <whisperaven@gmail.com>
 
-try:
-    from urllib.parse import unquote
-except ImportError:
-    from urllib import unquote
+from urllib.parse import unquote
 
-import six
 import cherrypy
 
 from .utils import *
@@ -17,7 +13,7 @@ from exe.runner import ExecuteRunner
 
 @cherrypy.expose
 class ExecuteHandler(EndpointHandler):
-    """ Endpoint Handler: `/execute`. """
+    """ Endpoint Handler: ``/execute``. """
 
     __RUNNER__ = ExecuteRunner
 
@@ -25,8 +21,8 @@ class ExecuteHandler(EndpointHandler):
     def GET(self, **params):
         """ Execute command on remote host. """
         target = parse_params_target(params)
-        cmd = params.pop('cmd', None)
-        if cmd == None:
+        cmd = params.pop('cmd', "")
+        if not cmd or not isinstance(cmd, str):
             raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_BAD_SERVPARAMS)
         cmd = unquote(cmd)
 
@@ -34,19 +30,19 @@ class ExecuteHandler(EndpointHandler):
         if not result:
             raise cherrypy.HTTPError(status.NOT_FOUND, ERR_NO_MATCH)
         else:
-            return response(status.OK, result)
+            return api_response(status.OK, result)
 
     @cherrypy.tools.json_in(force=False)
     @cherrypy.tools.json_out()
     def POST(self, **params):
         """ Execute command on remote host(s). """
-        targets = cherrypy.request.json.pop('targets', None)
+        targets = cherrypy.request.json.pop('targets', [])
         if not targets or not isinstance(targets, list):
             raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_NO_TARGET)
 
-        cmd = cherrypy.request.json.pop('cmd', None)
-        if not cmd or not isinstance(cmd, six.text_type):
+        cmd = cherrypy.request.json.pop('cmd', "")
+        if not cmd or not isinstance(cmd, str):
             raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_BAD_ROLE)
 
-        jid = self.handle(targets, cmd, async=True)
-        return response(status.CREATED, dict(jid=jid))
+        jid = self.handle(targets, cmd, run_async=True)
+        return api_response(status.CREATED, dict(jid=jid))

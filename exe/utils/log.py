@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# (c) 2016, Hao Feng <whisperaven@gmail.com>
 
 import sys
 import logging
@@ -6,19 +6,22 @@ import logging
 from exe.exc import ConfigError
 
 
+__all__ = ["bootstrap_logger", "initialize_logger", "open_logfile"]
+
+
 ## Consts ##
 LOG_LEVEL_MAPPER = dict(
-    DEBUG=logging.DEBUG,
-    INFO=logging.INFO,
-    WARNING=logging.WARNING,
-    ERROR=logging.ERROR,
-    CRITICAL=logging.CRITICAL)
+    DEBUG    = logging.DEBUG,
+    INFO     = logging.INFO,
+    WARNING  = logging.WARNING,
+    ERROR    = logging.ERROR,
+    CRITICAL = logging.CRITICAL)
 LOG_LEVEL_DEFAULT = logging.INFO
 LOG_FORMAT_DEFAULT = '%(asctime)-15s [%(levelname)s] %(message)s'
 
 
-def logger_bootstrap():
-    """ Init stream logger before the real logger initialized. """
+def bootstrap_logger():
+    """ Initialize stream logger before the real logger initialized. """
     logger = logging.getLogger()
     handler = logging.StreamHandler(sys.stdout)
     formatter = logging.Formatter(LOG_FORMAT_DEFAULT)
@@ -28,12 +31,12 @@ def logger_bootstrap():
     logger.setLevel(LOG_LEVEL_DEFAULT)
 
 
-def logger_init(log_path="", log_level="", log_format=None):
+def initialize_logger(log_path="", log_level="", log_format=None):
     """ Open and config the root logger. """
     if not log_level:
         log_level = LOG_LEVEL_DEFAULT
     else:
-        for name, level in LOG_LEVEL_MAPPER.iteritems():
+        for name, level in LOG_LEVEL_MAPPER.items():
             if name == log_level.upper():
                 log_level = level
                 break

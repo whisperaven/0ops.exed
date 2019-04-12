@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# (c) 2016, Hao Feng <whisperaven@gmail.com>
 
 import cherrypy
 
@@ -22,20 +22,21 @@ def _state_parse(state):
         raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_BAD_SERVPARAMS)
     return start, restart
 
+
 @cherrypy.expose
 class ServiceHandler(EndpointHandler):
-    """ Endpoint Handler: `/service`. """
+    """ Endpoint Handler: ``/service``. """
 
     __RUNNER__ = ServiceRunner
 
     @cherrypy.tools.json_out()
     def GET(self, **params):
         """ Manipulate service on remote host. """
-        name = params.pop('name', None)
-        state = parse_params_int(params, 'state')
         target = parse_params_target(params)
 
-        if name == None or state == None:
+        name = params.pop('name', "")
+        state = parse_params_int(params, 'state')
+        if not name or state == None:
             raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_BAD_SERVPARAMS)
 
         name = name.lower()
@@ -46,24 +47,25 @@ class ServiceHandler(EndpointHandler):
         if not result:
             raise cherrypy.HTTPError(status.NOT_FOUND, ERR_NO_MATCH)
         else:
-            return response(status.OK, result)
+            return api_response(status.OK, result)
 
     @cherrypy.tools.json_in(force=False)
     @cherrypy.tools.json_out()
     def POST(self):
         """ Manipulate service on remote host(s). """
-        targets = cherrypy.request.json.pop('targets', None)
+        targets = cherrypy.request.json.pop('targets', [])
         if not targets or not isinstance(targets, list):
             raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_NO_TARGET)
 
-        name = cherrypy.request.json.pop('name', None)
+        name = cherrypy.request.json.pop('name', "")
         state = cherrypy.request.json.pop('state', None)
-        if name == None or state == None:
+        if not name or not isinstance(name, str) or state == None:
             raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_BAD_SERVPARAMS)
 
         name = name.lower()
         start, restart = _state_parse(state)
         graceful = cherrypy.request.json.pop('graceful', False)
 
-        jid = self.handle(targets, name, start, restart, graceful, async=True)
-        return response(status.CREATED, dict(jid=jid))
+        jid = self.handle(targets, name, start, restart,
+                          graceful, run_async=True)
+        return api_response(status.CREATED, dict(jid=jid))

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# (c) 2016, Hao Feng <whisperaven@gmail.com>
 
 import cherrypy
 
@@ -9,6 +9,6 @@ from exe.runner import FacterRunner
 
 @cherrypy.expose
 class FacterHandler(CommonHandler):
-    """ Endpoint Handler: `/facter`. """
+    """ Endpoint Handler: ``/facter``. """
 
     __RUNNER__ = FacterRunner

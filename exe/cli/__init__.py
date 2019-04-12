@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
+# (c) 2016, Hao Feng <whisperaven@gmail.com>
 
-from .main import exe_main
+from .main import cli_main
 
 
-__all__ = ['exe_main']
+__all__ = ['cli_main']

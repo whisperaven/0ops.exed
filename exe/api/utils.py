@@ -1,20 +1,12 @@
-# -*- coding: utf-8 -*-
+# (c) 2016, Hao Feng <whisperaven@gmail.com>
 
 import json
-import inspect
 import logging
 
-try:
-    from html import unescape
-except ImportError:
-    unescape = None
-try:
-    from html.parser import HTMLParser
-except ImportError:
-    from HTMLParser import HTMLParser
+from html import unescape
 
-import six
 import cherrypy
+from cherrypy.lib import is_closable_iterator
 from cherrypy._cptools import HandlerWrapperTool
 
 from .consts import *
@@ -27,45 +19,49 @@ LOG = logging.getLogger(__name__)
 @cherrypy.tools.register('before_handler')
 def params_check_target():
     """ Check the request params contains 'target' or not. """
-    if not cherrypy.request.params.has_key('target'):
+    if 'target' not in cherrypy.request.params:
         raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_NO_TARGET)
+
+
+# Not in use, because cherrypy does not do this in current version
+@cherrypy.tools.register('before_finalize')
+def unescape_response():
+    """ Unescape the html body which escaped by ``_cpcompat.escape_html()``. """
+    response = cherrypy.serving.response
+    if not is_closable_iterator(response.body): # Dont do this for stream
+        response.body = bytes(unescape_html(response.collapse_body()))
 
 
 @cherrypy.tools.register('before_finalize')
 def fix_http_content_length():
-    """ Reverse operate done by cherrypy `_be_ie_unfriendly`. """
+    """ Reverse operate done by cherrypy ``_be_ie_unfriendly``. """
     response = cherrypy.serving.response
-    if not inspect.isgenerator(response.body): # Dont do this in `stream` mode
+    if not is_closable_iterator(response.body): # Dont do this for stream
         response.body = response.collapse_body().strip()
-        response.headers['Content-Length'] = str(len(response.collapse_body())) 
-
-
-@cherrypy.tools.register('before_finalize')
-def unescape_response():
-    """ Unescape the html body which escaped by `_cpcompat.escape_html()`. """
-    response = cherrypy.serving.response
-    if not inspect.isgenerator(response.body): # Dont do this in `stream` mode
-        response.body = six.binary_type(unescape_html(response.collapse_body()))
+        response.headers['Content-Length'] = str(len(response.collapse_body()))
 
 
 @cherrypy.tools.register('before_finalize')
 def delete_allow_header():
-    """ Delete the `Allow` header which set by `MethodDispatcher`. """
-    response = cherrypy.serving.response
-    response.headers.pop('Allow', None)
+    """ Delete the ``Allow`` header which set by ``MethodDispatcher``. """
+    cherrypy.serving.response.headers.pop('Allow', None)
 
 
 def _json_stream_output(next_handler, *args, **kwargs):
     """ Output JSON in stream mode. """
-    cherrypy.response.headers['Content-Type'] = "application/json"
-    _outputs = next_handler(*args, **kwargs)
-    if inspect.isgenerator(_outputs):
+    outputs = next_handler(*args, **kwargs)
+    response = cherrypy.serving.response
+
+    response.headers['Content-Type'] = "application/json"
+
+    if is_closable_iterator(outputs): # Do this only for stream
+        response.stream = True
         def _stream_outputs():
-            for _content in _outputs:
-                yield json.dumps(_content)
+            for _content in outputs:
+                yield json.dumps(_content).encode('utf-8')
         return _stream_outputs()
     else:
-        return json.dumps(_outputs)
+        return json.dumps(outputs).encode('utf-8')
 cherrypy.tools.json_stream_output = HandlerWrapperTool(_json_stream_output)
 
 
@@ -79,22 +75,22 @@ def error_response(status, message, traceback, version):
 
 # Helpers #
 def unescape_html(content):
-    if unescape is not None:
-        return unescape(content)
-    else:
-        return HTMLParser().unescape(content)
+    return unescape(content)
 
 
 def parse_params_target(params):
-    """ Get the `target` from request params or raise http 400 error. """
+    """ Get the ``target`` from request params or raise http 400 error. """
     try:
-        return params.pop('target')
+        targets = params.pop('target')
+        if not isinstance(target, list):
+            raise KeyError
+        return targets
     except KeyError:
         raise cherrypy.HTTPError(status.BAD_REQUEST, ERR_NO_TARGET)
 
 
 def parse_params_bool(params, p):
-    """ Get and parse the `params` from request params to see if it is a true value. """
+    """ Get and parse a boolean value from request params. """
     val = params.pop(p, None)
     if not val:
         return False
@@ -102,7 +98,7 @@ def parse_params_bool(params, p):
     
 
 def parse_params_int(params, p):
-    """ Get and parse the `params` from request params and try to covert it to int. """
+    """ Get and parse an int value from request params. """
     val = params.pop(p, None)
     try:
         return int(val, 10)
@@ -110,8 +106,10 @@ def parse_params_int(params, p):
         return None
 
 
-def response(status, body):
-    """ Set response status code and body before send them to the client,
-        Note that the `json.loads()` should done by the cherrypy `json_out` tools. """
-    cherrypy.response.status = status
+def api_response(status, body):
+    """ Set response status code and body before send them to the client.
+
+    Note that we should't invoke ``json.loads()`` because all json things
+    should handled by ``cherrypy.tools.json_out`` tools. """
+    cherrypy.serving.response.status = status
     return body

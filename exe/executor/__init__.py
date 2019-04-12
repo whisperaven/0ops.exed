@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# (c) 2016, Hao Feng <whisperaven@gmail.com>
 
 from .prototype import ExecutorPrototype
 from ._ansible import AnsibleExecutor
